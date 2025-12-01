@@ -1,13 +1,10 @@
 <!--components/Main/MediaSelector.vue-->
 <template>
-  <div class="media-selector-overlay" @click.self="handleClose">
-    <div class="media-selector bg-white rounded-xl w-full max-w-6xl max-h-[80vh] flex flex-col">
+  <div class="media-selector-overlay" @click.self="$emit('close')">
+    <div class="media-selector bg-white rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
       <div class="media-header flex justify-between items-center p-6 border-b border-gray-200">
-        <div>
-          <h2 class="text-xl font-semibold">Media Library</h2>
-          <p class="text-sm text-gray-500 mt-1">Select multiple images for your album</p>
-        </div>
-        <button @click="handleClose" class="close-btn text-2xl hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center">
+        <h2 class="text-xl font-semibold">Media Library</h2>
+        <button @click="$emit('close')" class="close-btn text-2xl hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center">
           ×
         </button>
       </div>
@@ -27,7 +24,7 @@
                      'border-transparent text-gray-500': activeTab !== 'upload' }]"
           @click="activeTab = 'upload'"
         >
-          Upload Multiple
+          Upload
         </button>
       </div>
 
@@ -47,31 +44,15 @@
             </select>
           </div>
 
-          <div class="selection-info mb-4 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-700">
-              {{ selectedMedia.length }} image(s) selected
-            </p>
-          </div>
-
-          <div class="media-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div class="media-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             <div
               v-for="item in filteredMedia"
               :key="item.id"
-              :class="['media-item border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden relative',
-                       { 'border-blue-500 bg-blue-50': isSelected(item.id),
-                         'border-gray-200 hover:border-gray-300': !isSelected(item.id) }]"
-              @click="toggleMediaSelection(item)"
+              :class="['media-item border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden',
+                       { 'border-blue-500 bg-blue-50': selectedMedia?.id === item.id,
+                         'border-gray-200 hover:border-gray-300': selectedMedia?.id !== item.id }]"
+              @click="selectMedia(item)"
             >
-              <!-- Selection Checkbox -->
-              <div class="absolute top-2 right-2 z-10">
-                <input
-                  type="checkbox"
-                  :checked="isSelected(item.id)"
-                  class="w-5 h-5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
-                  @click.stop="toggleMediaSelection(item)"
-                />
-              </div>
-              
               <div class="media-preview h-24 bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img 
                   v-if="item.type === 'image'" 
@@ -105,25 +86,24 @@
           >
             <div class="upload-content flex flex-col items-center gap-4">
               <div class="upload-icon text-4xl">📁</div>
-              <p class="text-gray-700 font-medium">Drag and drop multiple files here</p>
+              <p class="text-gray-700 font-medium">Drag and drop files here</p>
               <p class="upload-hint text-gray-500 m-0">or</p>
               <input
                 ref="fileInput"
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/*,video/*"
                 @change="handleFileSelect"
                 class="file-input hidden"
               />
               <button @click="triggerFileInput" class="btn-primary px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
-                Choose Multiple Files
+                Choose Files
               </button>
-              <p class="text-xs text-gray-500">Supports multiple image selection</p>
             </div>
           </div>
 
           <div v-if="uploadQueue.length > 0" class="upload-queue mt-6">
-            <h4 class="text-lg font-semibold mb-4">Upload Queue ({{ uploadQueue.length }} files)</h4>
+            <h4 class="text-lg font-semibold mb-4">Upload Queue</h4>
             <div
               v-for="file in uploadQueue"
               :key="file.id"
@@ -143,53 +123,37 @@
                 <span class="file-size text-xs text-gray-500">{{ formatFileSize(file.size) }}</span>
               </div>
             </div>
-            
-            <div class="mt-4 p-3 bg-green-50 rounded-lg">
-              <p class="text-sm text-green-700">
-                {{ completedUploads }} of {{ uploadQueue.length }} files uploaded successfully
-              </p>
-            </div>
           </div>
         </div>
       </div>
 
       <div class="media-footer flex justify-between items-center p-6 border-t border-gray-200 gap-4">
-        <div v-if="selectedMedia.length > 0" class="selected-media-info flex items-center gap-4 flex-1">
-          <div class="flex -space-x-2">
-            <img 
-              v-for="media in selectedMedia.slice(0, 3)" 
-              :key="media.id"
-              :src="media.url" 
-              :alt="media.alt" 
-              class="selected-preview w-12 h-12 object-cover rounded-lg border-2 border-white"
-              @error="handleImageError"
-            />
-            <div v-if="selectedMedia.length > 3" class="w-12 h-12 bg-gray-200 rounded-lg border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
-              +{{ selectedMedia.length - 3 }}
-            </div>
-          </div>
+        <div v-if="selectedMedia" class="selected-media-info flex items-center gap-4 flex-1">
+          <img 
+            :src="selectedMedia.url" 
+            :alt="selectedMedia.alt" 
+            class="selected-preview w-12 h-12 object-cover rounded-lg"
+            @error="handleImageError"
+          />
           <div class="selected-details flex flex-col">
-            <div class="selected-name font-medium text-gray-800">{{ selectedMedia.length }} image(s) selected</div>
+            <div class="selected-name font-medium text-gray-800">{{ selectedMedia.name }}</div>
             <div class="selected-meta text-sm text-gray-500">
-              Ready to add to album
+              {{ formatFileSize(selectedMedia.size) }} • {{ selectedMedia.type }}
             </div>
           </div>
         </div>
         <div v-else class="flex-1"></div>
         
         <div class="media-actions flex gap-3">
-          <button @click="clearSelection" class="btn-secondary px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200" :disabled="selectedMedia.length === 0">
-            Clear Selection
+          <button @click="$emit('close')" class="btn-secondary px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200">
+            Cancel
           </button>
           <button 
             @click="insertSelectedMedia" 
             class="btn-primary px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="selectedMedia.length === 0"
+            :disabled="!selectedMedia"
           >
-            Add {{ selectedMedia.length }} Image(s)
-          </button>
-          <button @click="handleClose" class="btn-cancel px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-            Cancel
+            Insert Media
           </button>
         </div>
       </div>
@@ -200,17 +164,15 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// Define emits for multiple media selection
-const emit = defineEmits(['media-selected', 'multiple-media-selected', 'close'])
+const emit = defineEmits(['media-selected', 'close'])
 
 const activeTab = ref('library')
 const searchQuery = ref('')
 const mediaType = ref('')
-const selectedMedia = ref([])
+const selectedMedia = ref(null)
 const isDragOver = ref(false)
 const uploadQueue = ref([])
 const fileInput = ref(null)
-const completedUploads = ref(0)
 
 // Sample media data with working image URLs
 const mediaLibrary = ref([
@@ -249,24 +211,6 @@ const mediaLibrary = ref([
     size: 2560000,
     alt: 'Tropical beach sunset',
     uploadedAt: '2024-01-12'
-  },
-  {
-    id: 5,
-    name: 'desert-dunes.jpg',
-    url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=300&h=200&fit=crop',
-    type: 'image',
-    size: 1980000,
-    alt: 'Sandy desert dunes',
-    uploadedAt: '2024-01-11'
-  },
-  {
-    id: 6,
-    name: 'lake-reflection.jpg',
-    url: 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=300&h=200&fit=crop',
-    type: 'image',
-    size: 2230000,
-    alt: 'Calm lake reflection',
-    uploadedAt: '2024-01-10'
   }
 ])
 
@@ -287,36 +231,15 @@ const filteredMedia = computed(() => {
   return filtered
 })
 
-const isSelected = (mediaId) => {
-  return selectedMedia.value.some(media => media.id === mediaId)
+const selectMedia = (media) => {
+  selectedMedia.value = media
 }
 
-const toggleMediaSelection = (media) => {
-  const index = selectedMedia.value.findIndex(item => item.id === media.id)
-  if (index > -1) {
-    selectedMedia.value.splice(index, 1)
-  } else {
-    selectedMedia.value.push(media)
-  }
-}
-
-const clearSelection = () => {
-  selectedMedia.value = []
-}
-
-// FIXED: Emit all selected media at once
 const insertSelectedMedia = () => {
-  if (selectedMedia.value.length > 0) {
-    // Emit all selected media items as an array
-    emit('multiple-media-selected', selectedMedia.value)
-    handleClose()
+  if (selectedMedia.value) {
+    emit('media-selected', selectedMedia.value)
+    emit('close')
   }
-}
-
-const handleClose = () => {
-  // Clear selection when closing
-  selectedMedia.value = []
-  emit('close')
 }
 
 const handleDragOver = (event) => {
@@ -342,19 +265,12 @@ const triggerFileInput = () => {
 }
 
 const handleFiles = (files) => {
-  const imageFiles = files.filter(file => file.type.startsWith('image/'))
-  
-  if (imageFiles.length === 0) {
-    alert('Please select image files only.')
-    return
-  }
-  
-  imageFiles.forEach(file => {
+  files.forEach(file => {
     const fileItem = {
       id: Date.now() + Math.random(),
       name: file.name,
       size: file.size,
-      type: 'image',
+      type: file.type.startsWith('image/') ? 'image' : 'video',
       progress: 0,
       file: file
     }
@@ -372,7 +288,7 @@ const simulateUpload = (fileItem) => {
       
       // Add to media library
       const newMedia = {
-        id: Date.now() + Math.random(),
+        id: Date.now(),
         name: fileItem.name,
         url: URL.createObjectURL(fileItem.file),
         type: fileItem.type,
@@ -382,17 +298,13 @@ const simulateUpload = (fileItem) => {
       }
       
       mediaLibrary.value.unshift(newMedia)
-      completedUploads.value++
       
       // Auto-select the newly uploaded media
-      selectedMedia.value.push(newMedia)
+      selectedMedia.value = newMedia
       
       // Remove from queue after delay
       setTimeout(() => {
         uploadQueue.value = uploadQueue.value.filter(item => item.id !== fileItem.id)
-        if (uploadQueue.value.length === 0) {
-          completedUploads.value = 0
-        }
       }, 1000)
     }
   }, 200)
@@ -407,6 +319,7 @@ const formatFileSize = (bytes) => {
 }
 
 const handleImageError = (event) => {
+  // Fallback for broken images
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4='
 }
 </script>
@@ -447,7 +360,6 @@ const handleImageError = (event) => {
   
   .media-actions {
     justify-content: flex-end;
-    flex-wrap: wrap;
   }
 }
 </style>

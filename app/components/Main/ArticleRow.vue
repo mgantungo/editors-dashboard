@@ -1,90 +1,93 @@
-<!--components/Main/AlbumEditor.vue-->
+<!--components/Main/ArticleRow.vue-->
 <template>
-  <tr 
-    :class="['article-row', rowClass]"
-    @click="handleRowClick"
-  >
-    <td @click.stop>
+  <tr :class="['hover:bg-gray-50 transition-colors', selected ? 'bg-blue-50' : '']">
+    <td class="px-4 py-3">
       <input
         type="checkbox"
         :checked="selected"
         @change="$emit('select', article.id)"
-        class="row-checkbox"
+        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
       />
     </td>
-    <td>
-      <div class="article-title">
-        <span class="title-text">{{ article.title }}</span>
-        <div class="article-badges">
-          <span v-if="article.featured" class="featured-badge">Featured</span>
-          <span v-if="article.breakingNews" class="breaking-badge">Breaking</span>
-          <span v-if="article.premium" class="premium-badge">Premium</span>
+    <td class="px-4 py-3">
+      <div class="max-w-xs">
+        <div class="font-medium text-gray-900 text-sm truncate">
+          {{ article.title }}
+        </div>
+        <div v-if="article.tags && article.tags.length > 0" class="flex flex-wrap gap-1 mt-1">
+          <span
+            v-for="tag in article.tags.slice(0, 2)"
+            :key="tag"
+            class="inline-block bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs font-medium"
+          >
+            {{ tag }}
+          </span>
+          <span v-if="article.tags.length > 2" class="text-gray-400 text-xs">
+            +{{ article.tags.length - 2 }}
+          </span>
         </div>
       </div>
     </td>
-    <td>
-      <span :class="['status-badge', `status-${article.status}`]">
-        {{ formatStatus(article.status) }}
+    <td class="px-4 py-3">
+      <span 
+        :class="[
+          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+          statusClasses[article.status] || 'bg-gray-100 text-gray-800'
+        ]"
+      >
+        {{ article.status }}
       </span>
     </td>
-    <td>{{ getCategoryName(article.category) }}</td>
-    <td>
-      <div class="authors-list">
-        <span
-          v-for="author in limitedAuthors"
-          :key="author.id"
-          class="author-tag"
-        >
-          {{ author.name }}
-        </span>
-        <span v-if="article.authors.length > 2" class="more-authors">
-          +{{ article.authors.length - 2 }}
-        </span>
+    <td class="px-4 py-3 text-sm text-gray-900">
+      {{ categoryName }}
+    </td>
+    <td class="px-4 py-3 text-sm text-gray-600 max-w-[200px]">
+      <div class="truncate" :title="authorNames">
+        {{ authorNames }}
       </div>
     </td>
-    <td>
-      <span v-if="article.publishedAt" class="date-text">
-        {{ formatDate(article.publishedAt) }}
-      </span>
-      <span v-else class="date-text muted">Not published</span>
+    <td class="px-4 py-3 text-sm text-gray-500">
+      {{ formattedDate }}
     </td>
-    <td>
-      <span :class="['live-indicator', { live: article.live }]">
-        {{ article.live ? 'Yes' : 'No' }}
+    <td class="px-4 py-3">
+      <span 
+        :class="[
+          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+          article.live ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        ]"
+      >
+        {{ article.live ? 'Live' : 'Offline' }}
       </span>
     </td>
-    <td>
-      <div class="action-buttons" @click.stop>
+    <td class="px-4 py-3">
+      <div class="flex items-center gap-1">
         <button
-          v-if="canEdit"
+          @click="$emit('view', article)"
+          class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          title="View"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+        </button>
+        <button
           @click="$emit('edit', article)"
-          class="btn-action edit"
-          title="Edit article"
+          class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+          title="Edit"
         >
-          Edit
-        </button>
-        <button
-          v-else-if="article.status === 'published'"
-          @click="$emit('view', article)"
-          class="btn-action view"
-          title="View published article"
-        >
-          View
-        </button>
-        <button
-          v-else-if="article.status === 'deleted'"
-          @click="$emit('view', article)"
-          class="btn-action restore"
-          title="Restore deleted article"
-        >
-          Restore
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
         </button>
         <button
           @click="$emit('preview', article)"
-          class="btn-action preview"
-          title="Preview article"
+          class="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+          title="Preview"
         >
-          Preview
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
         </button>
       </div>
     </td>
@@ -92,7 +95,9 @@
 </template>
 
 <script setup>
-// Import store for author data
+import { computed } from 'vue'
+
+// Import store to access authors
 const editorStore = useEditorStore()
 const { authors } = storeToRefs(editorStore)
 
@@ -104,303 +109,33 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'edit', 'view', 'preview'])
 
-const rowClass = computed(() => ({
-  'row-published': props.article.status === 'published',
-  'row-draft': props.article.status === 'draft',
-  'row-rejected': props.article.status === 'rejected',
-  'row-deleted': props.article.status === 'deleted',
-  'clickable': true
-}))
+const statusClasses = {
+  published: 'bg-green-100 text-green-800',
+  draft: 'bg-yellow-100 text-yellow-800',
+  rejected: 'bg-red-100 text-red-800',
+  deleted: 'bg-gray-100 text-gray-800'
+}
 
-const canEdit = computed(() => 
-  !['published', 'deleted'].includes(props.article.status)
-)
-
-const limitedAuthors = computed(() => {
-  if (!props.article.authors || !authors.value) return []
-  
-  return props.article.authors.slice(0, 2).map(authorId => {
-    return authors.value.find(author => author.id === authorId) || { id: authorId, name: 'Unknown Author' }
-  })
+const categoryName = computed(() => {
+  const category = props.categories?.find(cat => cat.id === props.article.category)
+  return category?.name || 'Uncategorized'
 })
 
-const handleRowClick = () => {
-  if (canEdit.value) {
-    emit('edit', props.article)
-  } else {
-    emit('view', props.article)
-  }
-}
-
-const formatStatus = (status) => {
-  const statusMap = {
-    published: 'Published',
-    draft: 'Draft',
-    rejected: 'Rejected',
-    deleted: 'Deleted'
-  }
-  return statusMap[status] || status
-}
-
-const getCategoryName = (categoryId) => {
-  const category = props.categories?.find(cat => cat.id === categoryId)
-  return category?.name || 'Uncategorized'
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
-</script>
-
-<style scoped>
-.article-row {
-  border-bottom: 1px solid #f3f4f6;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: white;
-}
-
-.article-row:hover {
-  background-color: #f9fafb;
-}
-
-.article-row.row-published {
-  background-color: #f0f9ff;
-}
-
-.article-row.row-draft {
-  background-color: #fffbeb;
-}
-
-.article-row.row-rejected {
-  background-color: #fef2f2;
-}
-
-.article-row.row-deleted {
-  background-color: #f9fafb;
-  opacity: 0.7;
-}
-
-.row-checkbox {
-  cursor: pointer;
-}
-
-.article-title {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.title-text {
-  font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
-}
-
-.article-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.featured-badge {
-  background: #fbbf24;
-  color: #78350f;
-  padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.breaking-badge {
-  background: #ef4444;
-  color: white;
-  padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.premium-badge {
-  background: #f59e0b;
-  color: #78350f;
-  padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: inline-block;
-  text-align: center;
-  min-width: 80px;
-}
-
-.status-published {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.status-draft {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.status-rejected {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-}
-
-.status-deleted {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-}
-
-.authors-list {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.author-tag {
-  background: #e5e7eb;
-  color: #374151;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.more-authors {
-  color: #6b7280;
-  font-size: 0.75rem;
-  font-style: italic;
-}
-
-.date-text {
-  font-size: 0.875rem;
-  color: #374151;
-  font-weight: 500;
-}
-
-.date-text.muted {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.live-indicator {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  display: inline-block;
-  text-align: center;
-  min-width: 50px;
-}
-
-.live-indicator.live {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.btn-action {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid;
-  border-radius: 0.375rem;
-  background: white;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.btn-action.edit {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-.btn-action.edit:hover {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-
-.btn-action.view {
-  background: #10b981;
-  color: white;
-  border-color: #10b981;
-}
-
-.btn-action.view:hover {
-  background: #059669;
-  border-color: #059669;
-}
-
-.btn-action.restore {
-  background: #f59e0b;
-  color: white;
-  border-color: #f59e0b;
-}
-
-.btn-action.restore:hover {
-  background: #d97706;
-  border-color: #d97706;
-}
-
-.btn-action.preview {
-  background: #8b5cf6;
-  color: white;
-  border-color: #8b5cf6;
-}
-
-.btn-action.preview:hover {
-  background: #7c3aed;
-  border-color: #7c3aed;
-}
-
-@media (max-width: 1024px) {
-  .action-buttons {
-    flex-direction: column;
+const authorNames = computed(() => {
+  if (!props.article.authors || !authors.value || props.article.authors.length === 0) {
+    return 'No authors'
   }
   
-  .btn-action {
-    min-width: 60px;
-  }
-}
-</style>
+  const names = props.article.authors.map(id => {
+    const author = authors.value.find(a => a.id === id)
+    return author?.name || 'Unknown Author'
+  })
+  
+  return names.join(', ')
+})
+
+const formattedDate = computed(() => {
+  if (!props.article.publishedAt) return '-'
+  return new Date(props.article.publishedAt).toLocaleDateString()
+})
+</script>

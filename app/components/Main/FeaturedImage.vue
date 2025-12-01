@@ -12,45 +12,45 @@
     >
       <div class="upload-content">
         <div class="upload-icon">🖼️</div>
-        <p>Click to select featured image</p>
+        <p class="upload-text">Click to select featured image</p>
         <p class="upload-hint">or drag and drop</p>
       </div>
     </div>
 
-    <div v-else class="image-preview">
-      <div class="preview-container">
-        <img :src="image.url" :alt="image.alt" class="preview-image" />
+    <div v-else class="image-preview border border-gray-200 rounded-xl overflow-hidden">
+      <div class="preview-container relative bg-gray-50">
+        <img :src="image.url" :alt="image.alt" class="preview-image w-full h-48 object-cover" />
         <button @click="removeImage" class="remove-image-btn" title="Remove image">
           ×
         </button>
       </div>
       
-      <div class="image-details">
-        <div class="form-group">
-          <label>Alt Text</label>
+      <div class="image-details p-6">
+        <div class="form-group mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Alt Text</label>
           <input
             v-model="image.alt"
             placeholder="Describe the image..."
-            class="alt-input"
+            class="alt-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         
-        <div class="form-group">
-          <label>Caption</label>
+        <div class="form-group mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Caption</label>
           <textarea
             v-model="image.caption"
             placeholder="Image caption..."
             rows="2"
-            class="caption-input"
+            class="caption-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[60px]"
           ></textarea>
         </div>
         
         <div class="form-group">
-          <label>Photo Credit</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Photo Credit</label>
           <input
             v-model="image.credit"
             placeholder="Taken by..."
-            class="credit-input"
+            class="credit-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -65,6 +65,9 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+import MediaSelector from './MediaSelector.vue'
+
 const props = defineProps({
   modelValue: Object
 })
@@ -87,8 +90,8 @@ const handleMediaSelected = (mediaItem) => {
   image.value = {
     url: mediaItem.url,
     alt: mediaItem.alt || '',
-    caption: '',
-    credit: '',
+    caption: mediaItem.caption || '',
+    credit: mediaItem.credit || '',
     uploadedAt: new Date().toISOString()
   }
   showMediaSelector.value = false
@@ -109,7 +112,6 @@ const handleDrop = (event) => {
   
   const files = Array.from(event.dataTransfer.files)
   if (files.length > 0 && files[0].type.startsWith('image/')) {
-    // Handle file upload
     const file = files[0]
     const objectUrl = URL.createObjectURL(file)
     
@@ -132,110 +134,36 @@ const handleDrop = (event) => {
   gap: 1rem;
 }
 
-.featured-image label {
-  font-weight: 600;
-  color: #374151;
-}
-
 .image-upload-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 0.75rem;
-  padding: 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  @apply border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-200;
 }
 
 .image-upload-zone:hover,
 .image-upload-zone.drag-over {
-  border-color: #3b82f6;
-  background: #f0f9ff;
+  @apply border-blue-500 bg-blue-50;
 }
 
 .upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  @apply flex flex-col items-center gap-2;
 }
 
 .upload-icon {
-  font-size: 2rem;
+  @apply text-3xl;
+}
+
+.upload-text {
+  @apply text-gray-700 font-medium;
 }
 
 .upload-hint {
-  color: #6b7280;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.image-preview {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  overflow: hidden;
-}
-
-.preview-container {
-  position: relative;
-  background: #f9fafb;
-}
-
-.preview-image {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
+  @apply text-gray-500 text-sm m-0;
 }
 
 .remove-image-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
+  @apply absolute top-2 right-2 bg-red-500 bg-opacity-90 text-white border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-xl transition-colors duration-200;
 }
 
 .remove-image-btn:hover {
-  background: #dc2626;
-}
-
-.image-details {
-  padding: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.alt-input,
-.caption-input,
-.credit-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.caption-input {
-  resize: vertical;
-  min-height: 60px;
+  @apply bg-red-600 bg-opacity-100;
 }
 </style>

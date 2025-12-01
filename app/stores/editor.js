@@ -1,4 +1,6 @@
+//stores/editor.js
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
 
 export const useEditorStore = defineStore('editor', () => {
   // State
@@ -11,115 +13,11 @@ export const useEditorStore = defineStore('editor', () => {
   const isLoading = ref(false)
   const error = ref(null)
 
-  // Enhanced dummy data
-  const dummyPublications = [
-    { id: 1, name: 'Bukedde', slug: 'bukedde', description: 'Luganda newspaper' },
-    { id: 2, name: 'New Vision', slug: 'new-vision', description: 'National newspaper' },
-    { id: 3, name: 'Bride & Groom', slug: 'bride-groom', description: 'Wedding magazine' },
-    { id: 4, name: 'Harvest Money', slug: 'harvest-money', description: 'Agriculture magazine' }
-  ]
-
-  const dummyAuthors = [
-    { id: 1, name: 'John Mugisha', slug: 'john-mugisha', bio: 'Senior news reporter' },
-    { id: 2, name: 'Sarah Nakato', slug: 'sarah-nakato', bio: 'Feature writer' },
-    { id: 3, name: 'David Omondi', slug: 'david-omondi', bio: 'Sports journalist' },
-    { id: 4, name: 'Grace Nalwanga', slug: 'grace-nalwanga', bio: 'Entertainment editor' }
-  ]
-
-  const dummyCategories = [
-    { id: 1, name: 'News', slug: 'news', publicationId: 1 },
-    { id: 2, name: 'Sports', slug: 'sports', publicationId: 1 },
-    { id: 3, name: 'Entertainment', slug: 'entertainment', publicationId: 1 },
-    { id: 4, name: 'Politics', slug: 'politics', publicationId: 2 },
-    { id: 5, name: 'Business', slug: 'business', publicationId: 2 },
-    { id: 6, name: 'Wedding Tips', slug: 'wedding-tips', publicationId: 3 },
-    { id: 7, name: 'Fashion', slug: 'fashion', publicationId: 3 },
-    { id: 8, name: 'Farming', slug: 'farming', publicationId: 4 },
-    { id: 9, name: 'Agribusiness', slug: 'agribusiness', publicationId: 4 }
-  ]
-
-  const dummyArticles = [
-    {
-      id: 1,
-      title: 'Breaking: Major Development in National News',
-      status: 'published',
-      category: 1,
-      authors: [1, 2],
-      publishedAt: '2024-01-15T10:30:00Z',
-      live: true,
-      featured: true,
-      breakingNews: true,
-      breakingDuration: 120,
-      premium: false,
-      tags: ['breaking', 'national', 'news'],
-      summary: '<p>This is a summary of the breaking news article.</p>',
-      content: '<p>Full article content goes here with <strong>bold text</strong> and <em>italic text</em>.</p>',
-      featuredImage: {
-        url: '/images/news-1.jpg',
-        alt: 'News image',
-        caption: 'This is a featured image',
-        credit: 'John Photographer'
-      },
-      album: [
-        {
-          id: 1,
-          url: '/images/album-1.jpg',
-          alt: 'Album image 1',
-          caption: 'First album image',
-          credit: 'Sarah Photographer',
-          order: 0
-        }
-      ],
-      secondaryCategory: null,
-      publicationId: 1,
-      createdAt: '2024-01-14T15:00:00Z',
-      updatedAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: 2,
-      title: 'Draft Article About Sports',
-      status: 'draft',
-      category: 2,
-      authors: [3],
-      publishedAt: null,
-      live: false,
-      featured: false,
-      breakingNews: false,
-      breakingDuration: null,
-      premium: false,
-      tags: ['sports', 'draft'],
-      summary: '<p>This is a draft article summary.</p>',
-      content: '<p>Draft content being worked on.</p>',
-      featuredImage: null,
-      album: [],
-      secondaryCategory: null,
-      publicationId: 1,
-      createdAt: '2024-01-16T09:00:00Z',
-      updatedAt: '2024-01-16T09:00:00Z'
-    },
-    {
-      id: 3,
-      title: 'Deleted Article Example',
-      status: 'deleted',
-      category: 3,
-      authors: [4],
-      publishedAt: '2024-01-10T08:00:00Z',
-      live: false,
-      featured: false,
-      breakingNews: false,
-      breakingDuration: null,
-      premium: false,
-      tags: ['deleted'],
-      summary: '<p>This article was deleted.</p>',
-      content: '<p>Deleted content.</p>',
-      featuredImage: null,
-      album: [],
-      secondaryCategory: null,
-      publicationId: 1,
-      createdAt: '2024-01-09T10:00:00Z',
-      updatedAt: '2024-01-11T14:00:00Z'
-    }
-  ]
+  // Helper to get base URL
+  const getBaseUrl = () => {
+    const config = useRuntimeConfig()
+    return config.public.strapiBaseUrl || 'https://cms-vgad.visiongroup.co.ug'
+  }
 
   // Getters
   const currentArticles = computed(() => {
@@ -150,15 +48,110 @@ export const useEditorStore = defineStore('editor', () => {
     setTimeout(() => { error.value = null }, 5000)
   }
 
-  const fetchPublications = async () => {
+  // Fetch user publications and categories from API
+  const fetchUserData = async () => {
     try {
       setLoading(true)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      publications.value = dummyPublications
-      return publications.value
+      const authStore = useAuthStore()
+      
+      if (!authStore.user) {
+        throw new Error('No user logged in')
+      }
+
+      const baseUrl = getBaseUrl()
+      const username = authStore.user.username || authStore.user.name
+      
+      console.log('🔄 Fetching user data for:', username)
+      
+      const response = await $fetch(`${baseUrl}/api/publications/author/${username}/call`)
+      
+      console.log('✅ User data response:', response)
+
+      // Transform the API response to match our store structure
+      if (response.publications) {
+        publications.value = response.publications.map(pub => ({
+          id: pub.id,
+          name: pub.name,
+          slug: pub.slug,
+          description: pub.description
+        }))
+
+        // Extract and flatten all categories from publications
+        const allCategories = []
+        response.publications.forEach(pub => {
+          if (pub.categories && pub.categories.length > 0) {
+            pub.categories.forEach(cat => {
+              allCategories.push({
+                id: cat.id,
+                name: cat.name,
+                slug: cat.slug,
+                description: cat.description,
+                publicationId: pub.id
+              })
+            })
+          }
+        })
+        
+        categories.value = allCategories
+      }
+
+      console.log('✅ Transformed publications:', publications.value)
+      console.log('✅ Transformed categories:', categories.value)
+
+      return {
+        publications: publications.value,
+        categories: categories.value
+      }
+
     } catch (err) {
-      setError(err.message || 'Failed to fetch publications')
+      console.error('❌ Error fetching user data:', err)
+      setError(err.data?.message || err.message || 'Failed to fetch user publications')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch articles by author with date range
+  const fetchArticlesByAuthor = async (username, startDate = null, endDate = null) => {
+    try {
+      setLoading(true)
+      const baseUrl = getBaseUrl()
+      
+      // Calculate default date range (last 6 months)
+      if (!endDate) {
+        endDate = new Date().toISOString().split('T')[0]
+      }
+      if (!startDate) {
+        const sixMonthsAgo = new Date()
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+        startDate = sixMonthsAgo.toISOString().split('T')[0]
+      }
+
+      console.log('🔄 Fetching articles for:', username, 'from', startDate, 'to', endDate)
+      
+      const response = await $fetch(`${baseUrl}/api/posts/author/${username}/${startDate}/${endDate}`)
+      
+      console.log('✅ Articles API response:', response)
+
+      // Use the exact structure from the API response
+      if (response.data && response.data.articles) {
+        articles.value = response.data.articles
+        console.log(`✅ Articles loaded into store: ${articles.value.length}`)
+      } else if (response.articles) {
+        // Fallback for different response structure
+        articles.value = response.articles
+        console.log(`✅ Articles loaded into store (fallback): ${articles.value.length}`)
+      } else {
+        console.warn('⚠️ No articles found in response')
+        articles.value = []
+      }
+
+      return articles.value
+
+    } catch (err) {
+      console.error('❌ Error fetching articles:', err)
+      setError(err.data?.message || err.message || 'Failed to fetch articles')
       throw err
     } finally {
       setLoading(false)
@@ -167,21 +160,32 @@ export const useEditorStore = defineStore('editor', () => {
 
   const setCurrentPublication = async (publication) => {
     currentPublication.value = publication
+    // Filter articles for the current publication
     await fetchArticles(publication.id)
-    await fetchCategories(publication.id)
   }
 
   const fetchArticles = async (publicationId = null) => {
     try {
       setLoading(true)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      if (publicationId) {
-        articles.value = dummyArticles.filter(article => article.publicationId === publicationId)
-      } else {
-        articles.value = dummyArticles
+      const authStore = useAuthStore()
+      
+      if (!authStore.user) {
+        throw new Error('No user logged in')
       }
+
+      const username = authStore.user.username || authStore.user.name
+      
+      // Fetch articles for the current user
+      await fetchArticlesByAuthor(username)
+      
+      // Filter by publication if specified
+      if (publicationId) {
+        const filteredArticles = articles.value.filter(article => article.publicationId === publicationId)
+        return filteredArticles
+      }
+      
       return articles.value
+
     } catch (err) {
       setError(err.message || 'Failed to fetch articles')
       throw err
@@ -193,9 +197,29 @@ export const useEditorStore = defineStore('editor', () => {
   const fetchAuthors = async () => {
     try {
       setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 300))
-      authors.value = dummyAuthors
+      // Extract authors from articles
+      const allAuthors = []
+      const authorMap = new Map()
+      
+      articles.value.forEach(article => {
+        if (article.authors && article.authors.length > 0) {
+          article.authors.forEach(author => {
+            if (!authorMap.has(author.id)) {
+              authorMap.set(author.id, true)
+              allAuthors.push({
+                id: author.id,
+                name: author.display_name || author.username,
+                slug: author.username,
+                bio: author.bio || 'n/a'
+              })
+            }
+          })
+        }
+      })
+      
+      authors.value = allAuthors
       return authors.value
+
     } catch (err) {
       setError(err.message || 'Failed to fetch authors')
       throw err
@@ -207,13 +231,12 @@ export const useEditorStore = defineStore('editor', () => {
   const fetchCategories = async (publicationId = null) => {
     try {
       setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Categories are already loaded from user data
       if (publicationId) {
-        categories.value = dummyCategories.filter(cat => cat.publicationId === publicationId)
+        return categories.value.filter(cat => cat.publicationId === publicationId)
       } else {
-        categories.value = dummyCategories
+        return categories.value
       }
-      return categories.value
     } catch (err) {
       setError(err.message || 'Failed to fetch categories')
       throw err
@@ -226,9 +249,13 @@ export const useEditorStore = defineStore('editor', () => {
     try {
       setLoading(true)
       await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const authStore = useAuthStore()
       const newArticle = {
         id: Date.now(),
         ...articleData,
+        createdBy: authStore.user?.id,
+        createdByName: authStore.user?.name,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -246,12 +273,16 @@ export const useEditorStore = defineStore('editor', () => {
     try {
       setLoading(true)
       await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const authStore = useAuthStore()
       const index = articles.value.findIndex(article => article.id === parseInt(articleId))
       if (index === -1) throw new Error('Article not found')
       
       const updatedArticle = {
         ...articles.value[index],
         ...articleData,
+        updatedBy: authStore.user?.id,
+        updatedByName: authStore.user?.name,
         updatedAt: new Date().toISOString()
       }
       articles.value[index] = updatedArticle
@@ -269,9 +300,9 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   const initializeStore = async () => {
-    await fetchPublications()
+    await fetchUserData() // This replaces the dummy data initialization
+    await fetchArticles() // Fetch real articles after login
     await fetchAuthors()
-    await fetchCategories()
   }
 
   return {
@@ -291,8 +322,10 @@ export const useEditorStore = defineStore('editor', () => {
     articleCounts,
     
     // Actions
+    fetchUserData,
+    fetchArticlesByAuthor,
     setCurrentPublication,
-    fetchPublications,
+    fetchPublications: fetchUserData,
     fetchArticles,
     fetchAuthors,
     fetchCategories,

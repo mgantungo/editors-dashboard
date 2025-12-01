@@ -1,11 +1,9 @@
-<!--components/Main/AlbumEditor.vue-->
+<!--components/Main/AlbumEditor.vue - Alternative with SortableJS-->
 <template>
   <div class="album-editor">
-    <div class="album-header flex justify-between items-center mb-6">
-      <h3 class="text-lg font-semibold text-gray-800">Image Album ({{ album.length }} images)</h3>
-      <button @click="addImage" class="add-image-btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2">
-        <span>+</span>
-        <span>Add Images</span>
+    <div class="album-header">
+      <button @click="addImage" class="add-image-btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+        + Add Image
       </button>
     </div>
 
@@ -16,39 +14,38 @@
     >
       <div class="empty-icon text-4xl mb-4">🖼️</div>
       <p class="text-gray-700 font-medium">No images in album</p>
-      <p class="empty-hint text-gray-500 mt-1">Click to add multiple images</p>
+      <p class="empty-hint text-gray-500 mt-1">Click to add images</p>
     </div>
 
     <div 
       v-else
       ref="albumGrid"
-      class="album-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      class="album-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
     >
       <div
         v-for="(image, index) in album"
         :key="image.id"
-        class="album-item border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-200"
+        class="album-item border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
         :data-id="image.id"
       >
         <div class="album-item-header flex justify-between items-center p-3 bg-gray-50 border-b border-gray-200">
           <div class="flex items-center gap-2">
-            <span class="drag-handle cursor-move text-gray-400 hover:text-gray-600 text-lg">⠿</span>
+            <span class="drag-handle cursor-move text-gray-400 hover:text-gray-600">⠿</span>
             <span class="item-number text-sm font-medium text-gray-700">#{{ index + 1 }}</span>
           </div>
           <button 
             @click="removeImage(image.id)" 
             class="remove-btn bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm transition-colors duration-200"
-            title="Remove image"
           >
             ×
           </button>
         </div>
         
-        <div class="image-preview h-48 bg-gray-100 overflow-hidden">
+        <div class="image-preview h-40 bg-gray-100 overflow-hidden">
           <img 
             :src="image.url" 
             :alt="image.alt" 
-            class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            class="w-full h-full object-cover"
             @error="handleImageError"
           />
         </div>
@@ -91,7 +88,7 @@
     <!-- Media Selector for adding images -->
     <MediaSelector
       v-if="showMediaSelector"
-      @multiple-media-selected="handleMultipleMediaSelected"
+      @media-selected="handleMediaSelected"
       @close="showMediaSelector = false"
     />
   </div>
@@ -128,22 +125,18 @@ const removeImage = (imageId) => {
   album.value = album.value.filter(img => img.id !== imageId)
 }
 
-// FIXED: Handle multiple media selection at once
-const handleMultipleMediaSelected = (mediaItems) => {
-  const newImages = mediaItems.map((mediaItem, index) => ({
-    id: Date.now() + Math.random() + index, // Ensure unique IDs
+const handleMediaSelected = (mediaItem) => {
+  const newImage = {
+    id: Date.now() + Math.random(),
     url: mediaItem.url,
     alt: mediaItem.alt || mediaItem.name || 'Image',
     caption: mediaItem.caption || '',
     credit: mediaItem.credit || '',
-    order: album.value.length + index
-  }))
+    order: album.value.length
+  }
   
-  // Add all new images to the album
-  album.value = [...album.value, ...newImages]
+  album.value = [...album.value, newImage]
   showMediaSelector.value = false
-  
-  console.log(`Added ${newImages.length} images to album`)
 }
 
 const updateAlbum = () => {
@@ -207,13 +200,5 @@ onMounted(() => {
 
 .drag-handle:active {
   cursor: grabbing;
-}
-
-.album-item {
-  transition: all 0.3s ease;
-}
-
-.album-item:hover {
-  transform: translateY(-2px);
 }
 </style>
