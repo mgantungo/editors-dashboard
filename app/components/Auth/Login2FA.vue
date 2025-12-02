@@ -11,9 +11,11 @@
       </div>
 
       <!-- Error Message -->
+     <!----  
       <div v-if="auth2FAStore.error" class="error-banner">
         {{ auth2FAStore.error }}
       </div>
+    -->
 
       <!-- Email & Password Step -->
       <form v-if="currentStep === 'email'" @submit.prevent="handleEmailSubmit" class="login-form">

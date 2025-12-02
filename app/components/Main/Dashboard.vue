@@ -56,8 +56,8 @@
                   {{ currentPublication.description }}
                 </p>
                 <div v-if="currentPublication" class="publication-access">
-                  <span class="access-badge" :class="getAccessLevel(currentPublication.id)">
-                    {{ getAccessLevel(currentPublication.id) }} Access
+                  <span class="access-badge Full">
+                    Full Access
                   </span>
                 </div>
               </div>
@@ -76,7 +76,6 @@
                 <button 
                   @click="openEditor('create')"
                   class="btn-primary"
-                  :disabled="!canCreateArticle"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -101,7 +100,7 @@
 
             <div v-else class="welcome-state">
               <div class="welcome-content">
-                <div class="welcome-icon">📝</div>
+                <div class="welcome-icon">📰</div>
                 <h2>Welcome to New Vision Editor, {{ authStore.user?.name }}!</h2>
                 <p>Select a publication from the sidebar to start managing articles.</p>
                 <div class="user-permissions">
@@ -116,7 +115,7 @@
                     <div class="permission-item">
                       <span class="permission-icon">📊</span>
                       <span class="permission-text">
-                        <strong>Publications:</strong> {{ authStore.allowedPublications.length }} available
+                        <strong>Publications:</strong> {{ publications.length }} available
                       </span>
                     </div>
                     <div class="permission-item">
@@ -217,6 +216,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -245,7 +245,8 @@ const showDeletedModal = ref(false)
 const selectedArticle = ref(null)
 const deletedArticle = ref(null)
 const editorMode = ref('create')
-const previewArticle = ref(null)
+const previewArticle = ref(null);
+
 
 // Store state
 const { 
@@ -260,20 +261,7 @@ const {
 
 const isLoggingOut = ref(false)
 
-// Computed
-const canCreateArticle = computed(() => {
-  if (!currentPublication.value) return false
-  return authStore.allowedPublications.includes(currentPublication.value.id)
-})
-
 // Methods
-const getAccessLevel = (publicationId) => {
-  if (authStore.allowedPublications.includes(publicationId)) {
-    return 'Full'
-  }
-  return 'No'
-}
-
 const handlePublicationSelect = async (publication) => {
   try {
     await editorStore.setCurrentPublication(publication)
@@ -283,11 +271,6 @@ const handlePublicationSelect = async (publication) => {
 }
 
 const openEditor = (mode, article = null) => {
-  if (!canCreateArticle.value && mode === 'create') {
-    alert('You do not have permission to create articles in this publication')
-    return
-  }
-  
   editorMode.value = mode
   selectedArticle.value = article
   showEditor.value = true
