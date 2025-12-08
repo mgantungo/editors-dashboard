@@ -46,4 +46,15 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['stores'] // Make sure this is included
   }
+  ,
+  vite: {
+  server: {
+    allowedHosts: [
+      'editor.newvision.co.ug',
+      'www.editor.newvision.co.ug',
+      'localhost',
+      '127.0.0.1'
+    ]
+  }
+}
 })
