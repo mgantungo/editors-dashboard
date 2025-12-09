@@ -3,7 +3,10 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <div class="logo">NV</div>
+        <!----<div class="logo">NV</div>-->
+        <div class="logo">
+          <img src="/nv-product.ico" alt="New Vision Logo" class="logo-image">
+        </div>
         <h1>New Vision Editor</h1>
         <p v-if="currentStep === 'email'">Sign in to your account</p>
         <p v-else-if="currentStep === 'token'">Enter verification code</p>
@@ -20,7 +23,7 @@
       <!-- Email & Password Step -->
       <form v-if="currentStep === 'email'" @submit.prevent="handleEmailSubmit" class="login-form">
         <div class="form-group">
-          <label for="email">Email Address</label>
+          <label for="email">Username</label>
           <input
             id="email"
             v-model="email"
@@ -244,7 +247,7 @@ onMounted(() => {
 <style scoped>
 /* Your existing styles remain the same */
 .login-container {
-  min-height: 90vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -3,7 +3,9 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <div class="logo">NV</div>
+        <div class="logo">
+          <img src="/nv-product.ico" alt="New Vision Logo" class="logo-image">
+        </div>
         <h1>New Vision Editor</h1>
         <p>Sign in to your account</p>
       </div>
