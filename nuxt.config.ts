@@ -1,29 +1,10 @@
-/*
+// nuxt.config.ts
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: [
     '@nuxt/image',
     '@pinia/nuxt',
-    '@nuxtjs/tailwindcss'
-  ],
-  nitro: {
-    preset: 'node',
-    devProxy: {},
-  },
-  imports: {
-    dirs: ['stores']
-  }
-})
-*/
-
-// nuxt.config.ts - Most maintainable
-export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
-  modules: [
-    '@nuxt/image',
-    '@pinia/nuxt', // Make sure this is included
     '@nuxtjs/tailwindcss'
   ],
   
@@ -33,9 +14,8 @@ export default defineNuxtConfig({
     }
   },
   
-  
   nitro: {
-    preset: 'node',
+    preset: 'node-server',  // Changed from 'node' to 'node-server'
     devProxy: {
       '/api': {
         target: 'https://cms-vgad.visiongroup.co.ug',
@@ -45,17 +25,17 @@ export default defineNuxtConfig({
   },
   
   imports: {
-    dirs: ['stores'] // Make sure this is included
-  }
-  ,
+    dirs: ['stores']
+  },
+  
   vite: {
-  server: {
-    allowedHosts: [
-      'editor.newvision.co.ug',
-      'www.editor.newvision.co.ug',
-      'localhost',
-      '127.0.0.1'
-    ]
+    server: {
+      allowedHosts: [
+        'editor.newvision.co.ug',
+        'www.editor.newvision.co.ug',
+        'localhost',
+        '127.0.0.1'
+      ]
+    }
   }
-}
 })
