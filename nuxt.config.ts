@@ -33,6 +33,7 @@ export default defineNuxtConfig({
     }
   },
   
+  
   nitro: {
     preset: 'node',
     devProxy: {
