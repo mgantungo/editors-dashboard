@@ -10,19 +10,6 @@
             <span v-if="article?.id" class="article-id">#{{ article.id }}</span>
           </h2>
           <div class="header-meta">
-            <!-- Publication warning/indicator -->
-            <span v-if="!hasPublication" class="publication-warning">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-              No Publication Selected
-            </span>
-            <span v-else class="publication-indicator">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-              </svg>
-              {{ currentPublication.name }}
-            </span>
             <span class="auto-save-status" :class="{ 'text-green-600': lastSaved, 'text-gray-500': !lastSaved }">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -36,15 +23,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
-      </div>
-
-      <!-- Publication warning banner -->
-      <div v-if="!hasPublication" class="publication-warning-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-content">
-          <h4>Publication Not Selected</h4>
-          <p>Please select a publication from the sidebar before creating or editing articles. Articles cannot be saved without a publication.</p>
-        </div>
       </div>
 
       <!-- Main Content -->
@@ -149,13 +127,6 @@
           <!-- Authors -->
           <div class="sidebar-section">
             <h3 class="sidebar-title">Authors</h3>
-            <!-- Info about current user as first author -->
-            <div v-if="mode === 'create' && currentUserAsAuthor" class="author-info-banner">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <span>You are automatically set as the first author. You can add more authors below.</span>
-            </div>
             <AuthorSelect 
               v-model="formData.authors"
               :multiple="true"
@@ -232,16 +203,16 @@
     <!-- Confirmation Dialog -->
     <div v-if="showConfirmation" class="dialog-overlay">
       <div class="confirmation-dialog">
-        <div class="dialog-icon" :class="{ 'error-icon': pendingAction === 'validation-error' }">
+        <div class="dialog-icon">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
           </svg>
         </div>
         <h3 class="dialog-title">{{ confirmationTitle }}</h3>
-        <p class="dialog-message" style="white-space: pre-line;">{{ confirmationMessage }}</p>
+        <p class="dialog-message">{{ confirmationMessage }}</p>
         <div class="dialog-actions">
-          <button v-if="pendingAction !== 'validation-error'" @click="cancelAction" class="btn-secondary">Cancel</button>
-          <button @click="pendingAction === 'validation-error' ? (showConfirmation = false) : confirmAction()" class="btn-primary">{{ confirmButtonText }}</button>
+          <button @click="cancelAction" class="btn-secondary">Cancel</button>
+          <button @click="confirmAction" class="btn-primary">{{ confirmButtonText }}</button>
         </div>
       </div>
     </div>
@@ -259,15 +230,13 @@ import AlbumEditor from './AlbumEditor.vue'
 import SeoTagsInput from './SeoTagsInput.vue'
 import SaveControls from './SaveControls.vue'
 
-// Import stores
+// Import store
 const editorStore = useEditorStore()
-const authStore = useAuthStore()
-const { authors, categories, currentPublication } = storeToRefs(editorStore)
+const { authors, categories } = storeToRefs(editorStore)
 
 const props = defineProps({
   article: Object,
-  mode: String,
-  user: Object
+  mode: String
 })
 
 const emit = defineEmits(['save', 'save-draft', 'publish', 'preview', 'cancel'])
@@ -284,9 +253,6 @@ const pendingAction = ref(null)
 const confirmationTitle = ref('')
 const confirmationMessage = ref('')
 const confirmButtonText = ref('Confirm')
-
-// Validation state
-const validationErrors = ref([])
 
 // Form data with all required fields
 const formData = ref({
@@ -307,34 +273,6 @@ const formData = ref({
   album: [],
   secondaryCategory: null
 })
-
-// Check if publication is selected
-const hasPublication = computed(() => {
-  return !!currentPublication.value
-})
-
-// Get current user as author object
-const currentUserAsAuthor = computed(() => {
-  if (!authStore.user) return null
-  
-  return {
-    id: authStore.user.id,
-    username: authStore.user.username || authStore.user.name,
-    displayName: authStore.user.name || authStore.user.username,
-    firstName: authStore.user.firstName || authStore.user.name?.split(' ')[0] || '',
-    lastName: authStore.user.lastName || authStore.user.name?.split(' ').slice(1).join(' ') || '',
-    email: authStore.user.email || ''
-  }
-})
-
-// Initialize authors with current user
-const initializeAuthors = () => {
-  if (props.mode === 'create' && currentUserAsAuthor.value) {
-    // For new articles, set current user as first author
-    formData.value.authors = [currentUserAsAuthor.value]
-    console.log('✅ Initialized with current user as author:', currentUserAsAuthor.value.displayName)
-  }
-}
 
 // Auto-save status text
 const autoSaveStatus = computed(() => {
@@ -383,11 +321,6 @@ watchEffect(() => {
 
 // Check for existing draft on component mount
 onMounted(() => {
-  // Initialize authors for new articles
-  if (props.mode === 'create') {
-    initializeAuthors()
-  }
-  
   loadDraft()
   startAutoSave()
   
@@ -422,14 +355,6 @@ const loadDraft = () => {
         formData.value = { ...formData.value, ...parsedDraft.data }
         lastSaved.value = parsedDraft.timestamp
         hasDraft.value = true
-        
-        // Ensure current user is still in authors list
-        if (props.mode === 'create' && currentUserAsAuthor.value) {
-          const hasCurrentUser = formData.value.authors.some(a => a.id === currentUserAsAuthor.value.id)
-          if (!hasCurrentUser) {
-            formData.value.authors.unshift(currentUserAsAuthor.value)
-          }
-        }
       }
     }
     isInitialLoad = false
@@ -552,47 +477,8 @@ const cancelAction = () => {
   pendingAction.value = null
 }
 
-// Validation function
-const validateForm = () => {
-  const errors = []
-  
-  // Check if publication is selected
-  if (!hasPublication.value) {
-    errors.push('Publication must be selected before saving')
-  }
-  
-  // Check if title is provided
-  if (!formData.value.title || formData.value.title.trim() === '') {
-    errors.push('Article title is required')
-  }
-  
-  // Check if content is provided
-  if (!formData.value.content || formData.value.content.trim() === '') {
-    errors.push('Article content is required')
-  }
-  
-  // Check if at least one author
-  if (!formData.value.authors || formData.value.authors.length === 0) {
-    errors.push('At least one author is required')
-  }
-  
-  validationErrors.value = errors
-  return errors.length === 0
-}
-
 // Handle save actions with confirmation
 const handleSave = () => {
-  // Validate before showing confirmation
-  if (!validateForm()) {
-    showConfirmationDialog(
-      'Cannot Save Article',
-      validationErrors.value.join('\n'),
-      'OK',
-      'validation-error'
-    )
-    return
-  }
-  
   if (hasUnsavedChanges.value) {
     showConfirmationDialog(
       'Save Changes',
@@ -606,17 +492,6 @@ const handleSave = () => {
 }
 
 const handleSaveDraft = () => {
-  // Validate before saving draft
-  if (!validateForm()) {
-    showConfirmationDialog(
-      'Cannot Save Draft',
-      validationErrors.value.join('\n'),
-      'OK',
-      'validation-error'
-    )
-    return
-  }
-  
   showConfirmationDialog(
     'Save Draft',
     'Save this article as a draft?',
@@ -626,17 +501,6 @@ const handleSaveDraft = () => {
 }
 
 const handlePublish = () => {
-  // Validate before publishing
-  if (!validateForm()) {
-    showConfirmationDialog(
-      'Cannot Publish Article',
-      validationErrors.value.join('\n'),
-      'OK',
-      'validation-error'
-    )
-    return
-  }
-  
   showConfirmationDialog(
     'Publish Article',
     'Are you sure you want to publish this article?',
@@ -771,65 +635,12 @@ watch(() => formData.value.status, (newStatus) => {
 .header-meta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .auto-save-status {
   font-size: 0.875rem;
   display: flex;
   align-items: center;
-}
-
-.publication-warning {
-  display: flex;
-  align-items: center;
-  color: #dc2626;
-  font-size: 0.875rem;
-  font-weight: 600;
-  background: #fef2f2;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid #fecaca;
-}
-
-.publication-indicator {
-  display: flex;
-  align-items: center;
-  color: #059669;
-  font-size: 0.875rem;
-  font-weight: 600;
-  background: #d1fae5;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid #a7f3d0;
-}
-
-.publication-warning-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem 2rem;
-  background: #fef2f2;
-  border-bottom: 1px solid #fecaca;
-}
-
-.warning-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.warning-content h4 {
-  margin: 0 0 0.5rem 0;
-  color: #991b1b;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.warning-content p {
-  margin: 0;
-  color: #dc2626;
-  font-size: 0.875rem;
-  line-height: 1.5;
 }
 
 .close-btn {
@@ -965,19 +776,6 @@ watch(() => formData.value.status, (newStatus) => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.author-info-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: #dbeafe;
-  border: 1px solid #bfdbfe;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  color: #1e40af;
-}
-
 /* Options Grid */
 .options-grid {
   display: flex;
@@ -1078,11 +876,6 @@ watch(() => formData.value.status, (newStatus) => {
   justify-content: center;
   margin: 0 auto 1rem;
   color: #d97706;
-}
-
-.error-icon {
-  background: #fef2f2 !important;
-  color: #dc2626 !important;
 }
 
 .dialog-title {
