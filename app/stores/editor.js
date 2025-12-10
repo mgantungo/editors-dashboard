@@ -366,6 +366,7 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   // Create article
+  /*
   const createArticle = async (articleData) => {
     try {
       setLoading(true)
@@ -415,8 +416,106 @@ export const useEditorStore = defineStore('editor', () => {
       setLoading(false)
     }
   }
+  */
+
+const createArticle = async (articleData) => {
+    try {
+      setLoading(true)
+      const authStore = useAuthStore()
+      const baseUrl = getBaseUrl()
+      
+      console.log('🆕 Creating new article:', articleData.title)
+      console.log('📊 Article data:', articleData)
+      
+      // Prepare the data to send to API
+      const apiData = {
+        // Basic fields
+        title: articleData.title,
+        content: articleData.content,
+        summary: articleData.summary || '',
+        
+        // Status and publishing
+        status: articleData.status || 'draft',
+        publishedAt: articleData.publishedAt || null,
+        live: articleData.live || false,
+        
+        // Feature flags
+        featured: articleData.featured || false,
+        breakingNews: articleData.breakingNews || false,
+        breakingDuration: articleData.breakingDuration || null,
+        premium: articleData.premium || false,
+        
+        // Relations
+        authors: articleData.authors || [authStore.user?.id || 1],
+        category: articleData.category || null,
+        secondaryCategory: articleData.secondaryCategory || null,
+        tags: articleData.tags || [],
+        
+        // Media
+        featuredImage: articleData.featuredImage || null,
+        album: articleData.album || [],
+        
+        // Publication
+        publicationId: articleData.publicationId || currentPublication.value?.id,
+        
+        // User tracking
+        createdBy: authStore.user?.id,
+        createdByName: authStore.user?.name,
+        updatedBy: authStore.user?.id,
+        updatedByName: authStore.user?.name
+      }
+      
+      console.log('📤 Sending to API:', apiData)
+      
+      // Call the save API endpoint
+      const response = await $fetch(`${baseUrl}/api/posts/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: apiData
+      })
+      
+      console.log('✅ Article created successfully:', response)
+      
+      // Transform the response to match our format
+      const newArticle = transformApiArticle(response)
+      
+      // Add to local articles array
+      articles.value.unshift(newArticle)
+      
+      // Update authors if needed
+      if (response.authors && response.authors.length > 0) {
+        response.authors.forEach(author => {
+          if (!authors.value.some(a => a.id === author.id)) {
+            authors.value.push({
+              id: author.id,
+              name: author.displayName || author.username,
+              username: author.username,
+              displayName: author.displayName,
+              firstName: author.firstName,
+              lastName: author.lastName,
+              email: author.email
+            })
+          }
+        })
+      }
+      
+      console.log('📝 Article added to local store')
+      
+      return newArticle
+      
+    } catch (err) {
+      console.error('❌ Error creating article:', err)
+      setError(err.data?.message || err.message || 'Failed to create article')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Update article
+  /*
   const updateArticle = async (articleId, articleData) => {
     try {
       setLoading(true)
@@ -442,6 +541,112 @@ export const useEditorStore = defineStore('editor', () => {
       setLoading(false)
     }
   }
+
+  */
+
+const updateArticle = async (articleId, articleData) => {
+  try {
+    setLoading(true)
+    const authStore = useAuthStore()
+    const baseUrl = getBaseUrl()
+    
+    console.log('🔄 Updating article:', articleId)
+    console.log('📊 Update data:', articleData)
+    
+    // Prepare the data to send to API
+    const apiData = {
+      // Include the ID for update
+      id: articleId,
+      
+      // Basic fields
+      title: articleData.title,
+      content: articleData.content,
+      summary: articleData.summary || '',
+      
+      // Status and publishing
+      status: articleData.status || 'draft',
+      publishedAt: articleData.publishedAt || null,
+      live: articleData.live || false,
+      
+      // Feature flags
+      featured: articleData.featured || false,
+      breakingNews: articleData.breakingNews || false,
+      breakingDuration: articleData.breakingDuration || null,
+      premium: articleData.premium || false,
+      
+      // Relations
+      authors: articleData.authors || [],
+      category: articleData.category || null,
+      secondaryCategory: articleData.secondaryCategory || null,
+      tags: articleData.tags || [],
+      
+      // Media
+      featuredImage: articleData.featuredImage || null,
+      album: articleData.album || [],
+      
+      // Publication
+      publicationId: articleData.publicationId || currentPublication.value?.id,
+      
+      // User tracking
+      updatedBy: authStore.user?.id,
+      updatedByName: authStore.user?.name
+    }
+    
+    console.log('📤 Sending update to API:', apiData)
+    
+    // Call the save API endpoint (it handles both create and update)
+    const response = await $fetch(`${baseUrl}/api/posts/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: apiData
+    })
+    
+    console.log('✅ Article updated successfully:', response)
+    
+    // Transform the response
+    const updatedArticle = transformApiArticle(response)
+    
+    // Update in local articles array
+    const index = articles.value.findIndex(article => article.id === parseInt(articleId))
+    if (index !== -1) {
+      articles.value[index] = updatedArticle
+      console.log('📝 Article updated in local store')
+    } else {
+      console.warn('⚠️ Article not found in local store, adding it')
+      articles.value.unshift(updatedArticle)
+    }
+    
+    // Update authors if needed
+    if (response.authors && response.authors.length > 0) {
+      response.authors.forEach(author => {
+        if (!authors.value.some(a => a.id === author.id)) {
+          authors.value.push({
+            id: author.id,
+            name: author.displayName || author.username,
+            username: author.username,
+            displayName: author.displayName,
+            firstName: author.firstName,
+            lastName: author.lastName,
+            email: author.email
+          })
+        }
+      })
+    }
+    
+    return updatedArticle
+    
+  } catch (err) {
+    console.error('❌ Error updating article:', err)
+    setError(err.data?.message || err.message || 'Failed to update article')
+    throw err
+  } finally {
+    setLoading(false)
+  }
+}
+
+
 
   const clearError = () => {
     error.value = null
