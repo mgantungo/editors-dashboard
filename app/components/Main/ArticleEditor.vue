@@ -1,4 +1,4 @@
-<!--components/Main/ArticleEditor.vue-->
+<!--components/Main/ArticleEditor.vue - FIXED VERSION-->
 <template>
   <div class="editor-overlay" @click.self="handleOverlayClick">
     <div class="editor-modal">
@@ -288,7 +288,7 @@ const confirmButtonText = ref('Confirm')
 // Validation state
 const validationErrors = ref([])
 
-// Form data with all required fields
+// Form data with all required fields - FIX 1: Added publicationId
 const formData = ref({
   title: '',
   authors: [],
@@ -305,7 +305,8 @@ const formData = ref({
   content: '',
   featuredImage: null,
   album: [],
-  secondaryCategory: null
+  secondaryCategory: null,
+  publicationId: null  // FIX 1: Added publicationId field
 })
 
 // Check if publication is selected
@@ -313,14 +314,17 @@ const hasPublication = computed(() => {
   return !!currentPublication.value
 })
 
-// Get current user as author object
+// Get current user as author object - FIX 2: Added 'name' field
 const currentUserAsAuthor = computed(() => {
   if (!authStore.user) return null
   
+  const displayName = authStore.user.name || authStore.user.username
+  
   return {
     id: authStore.user.id,
+    name: displayName,              // FIX 2: Added for AuthorSelect display
     username: authStore.user.username || authStore.user.name,
-    displayName: authStore.user.name || authStore.user.username,
+    displayName: displayName,
     firstName: authStore.user.firstName || authStore.user.name?.split(' ')[0] || '',
     lastName: authStore.user.lastName || authStore.user.name?.split(' ').slice(1).join(' ') || '',
     email: authStore.user.email || ''
@@ -333,6 +337,14 @@ const initializeAuthors = () => {
     // For new articles, set current user as first author
     formData.value.authors = [currentUserAsAuthor.value]
     console.log('✅ Initialized with current user as author:', currentUserAsAuthor.value.displayName)
+  }
+}
+
+// FIX 1: Initialize publication
+const initializePublication = () => {
+  if (currentPublication.value) {
+    formData.value.publicationId = currentPublication.value.id
+    console.log('✅ Initialized with publication:', currentPublication.value.name, '(ID:', currentPublication.value.id, ')')
   }
 }
 
@@ -376,16 +388,18 @@ watchEffect(() => {
       content: props.article.content || '',
       featuredImage: props.article.featuredImage || null,
       album: props.article.album || [],
-      secondaryCategory: props.article.secondaryCategory || null
+      secondaryCategory: props.article.secondaryCategory || null,
+      publicationId: props.article.publicationId || currentPublication.value?.id  // FIX 1: Added publicationId
     }
   }
 })
 
 // Check for existing draft on component mount
 onMounted(() => {
-  // Initialize authors for new articles
+  // Initialize authors and publication for new articles
   if (props.mode === 'create') {
     initializeAuthors()
+    initializePublication()  // FIX 1: Added publication initialization
   }
   
   loadDraft()
@@ -408,6 +422,14 @@ watch(formData, (newValue, oldValue) => {
   }
 }, { deep: true, immediate: false })
 
+// FIX 1: Watch for publication changes
+watch(() => currentPublication.value, (newPublication) => {
+  if (newPublication) {
+    formData.value.publicationId = newPublication.id
+    console.log('📰 Publication changed to:', newPublication.name, '(ID:', newPublication.id, ')')
+  }
+})
+
 let isInitialLoad = true
 
 // Load draft from local storage
@@ -429,6 +451,11 @@ const loadDraft = () => {
           if (!hasCurrentUser) {
             formData.value.authors.unshift(currentUserAsAuthor.value)
           }
+        }
+        
+        // FIX 1: Ensure publication is set
+        if (props.mode === 'create' && !formData.value.publicationId && currentPublication.value) {
+          formData.value.publicationId = currentPublication.value.id
         }
       }
     }
@@ -672,15 +699,31 @@ const handleClearDraft = () => {
   )
 }
 
-// Perform actual actions
+// Perform actual actions - FIX 3: Ensure status stays as draft
 const performSave = () => {
+  // FIX 3: Ensure status stays as intended (don't auto-publish)
+  if (!formData.value.status || formData.value.status === '') {
+    formData.value.status = 'draft'
+  }
+  
+  console.log('💾 Saving article with status:', formData.value.status)
+  console.log('📰 Publication ID:', formData.value.publicationId)
+  console.log('👥 Authors:', formData.value.authors)
+  
   autoSave()
   emit('save', formData.value)
   clearDraft()
 }
 
 const performSaveDraft = () => {
+  // FIX 3: Explicitly set to draft and clear published fields
   formData.value.status = 'draft'
+  formData.value.live = false
+  formData.value.publishedAt = null
+  
+  console.log('💾 Saving draft')
+  console.log('📰 Publication ID:', formData.value.publicationId)
+  
   autoSave()
   emit('save-draft', formData.value)
 }
@@ -690,6 +733,11 @@ const performPublish = () => {
   if (!formData.value.publishedAt) {
     formData.value.publishedAt = new Date().toISOString()
   }
+  formData.value.live = true
+  
+  console.log('📢 Publishing article')
+  console.log('📰 Publication ID:', formData.value.publicationId)
+  
   autoSave()
   emit('publish', formData.value)
   clearDraft()
@@ -709,6 +757,7 @@ watch(() => formData.value.status, (newStatus) => {
 </script>
 
 <style scoped>
+/* ... (Keep all existing styles from previous version) ... */
 .editor-overlay {
   position: fixed;
   inset: 0;
@@ -733,7 +782,6 @@ watch(() => formData.value.status, (newStatus) => {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Header */
 .editor-header {
   display: flex;
   justify-content: space-between;
@@ -851,7 +899,6 @@ watch(() => formData.value.status, (newStatus) => {
   border-color: #ef4444;
 }
 
-/* Main Content */
 .editor-content {
   flex: 1;
   display: grid;
@@ -873,14 +920,12 @@ watch(() => formData.value.status, (newStatus) => {
   flex-direction: column;
 }
 
-/* Save Controls Section */
 .save-controls-section {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* Content Sections */
 .content-section {
   margin-bottom: 2rem;
 }
@@ -923,7 +968,6 @@ watch(() => formData.value.status, (newStatus) => {
   gap: 2rem;
 }
 
-/* Sidebar Sections */
 .sidebar-section {
   margin-bottom: 2rem;
 }
@@ -978,7 +1022,6 @@ watch(() => formData.value.status, (newStatus) => {
   color: #1e40af;
 }
 
-/* Options Grid */
 .options-grid {
   display: flex;
   flex-direction: column;
@@ -1046,7 +1089,6 @@ watch(() => formData.value.status, (newStatus) => {
   line-height: 1.4;
 }
 
-/* Confirmation Dialog */
 .dialog-overlay {
   position: fixed;
   inset: 0;
@@ -1135,7 +1177,6 @@ watch(() => formData.value.status, (newStatus) => {
   border-color: #9ca3af;
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .editor-content {
     grid-template-columns: 1fr;

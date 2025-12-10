@@ -20,6 +20,7 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   // Transform API article to match component expectations
+/*
   const transformApiArticle = (apiArticle) => {
     // Extract category ID (already a number in API response)
     const categoryId = apiArticle.category || null
@@ -74,6 +75,64 @@ export const useEditorStore = defineStore('editor', () => {
       _authorsData: apiArticle.authors || []
     }
   }
+  */
+
+  const transformApiArticle = (apiArticle) => {
+  // Extract category ID
+  const categoryId = apiArticle.category || null;
+  
+  // Extract publication ID from publication array
+  const publicationId = apiArticle.publication?.[0]?.id || null;
+  
+  // Extract author IDs
+  const authorIds = Array.isArray(apiArticle.authorIds) ? apiArticle.authorIds : [];
+  
+  // Determine status - use view_status from API, default to 'draft'
+  const status = apiArticle.view_status || 'draft';
+  
+  // Determine live status - only true if both status is published AND live flag is true
+  const live = (status === 'published' && apiArticle.live === true) ? true : false;
+  
+  return {
+    // Core fields
+    id: apiArticle.id,
+    title: apiArticle.title,
+    status: status,
+    category: categoryId,
+    authors: authorIds,
+    publishedAt: apiArticle.wp_published_at || null,
+    live: live,
+    
+    // Feature flags
+    featured: apiArticle.featured || false,
+    breakingNews: apiArticle.breakingNews || false,
+    breakingDuration: apiArticle.breakingDuration || null,
+    
+    // Content fields
+    premium: apiArticle.isPremium || false,
+    tags: Array.isArray(apiArticle.tags) ? apiArticle.tags.map(t => t.name) : [],
+    summary: apiArticle.excerpt || '',
+    content: apiArticle.content || '',
+    
+    // Featured image
+    featuredImage: apiArticle.featured_image || null,
+    
+    // Album
+    album: Array.isArray(apiArticle.album) ? apiArticle.album : [],
+    
+    // Additional fields
+    secondaryCategory: apiArticle.secondaryCategory || null,
+    publicationId: publicationId,
+    
+    // Timestamps
+    createdAt: apiArticle.createdAt,
+    updatedAt: apiArticle.updatedAt,
+    
+    // Store original API data
+    _raw: apiArticle,
+    _authorsData: apiArticle.authors || []
+  }
+}
 
   // Extract and transform authors from articles
   const extractAuthorsFromArticles = (articlesArray) => {
