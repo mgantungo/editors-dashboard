@@ -395,8 +395,15 @@ const handlePreview = (articleData) => {
 }
 
 const handleRefresh = async () => {
-  if (currentPublication.value) {
-    await editorStore.fetchArticles(currentPublication.value.id)
+  try {
+    console.log('🔄 Refreshing articles...')
+    await editorStore.fetchArticles()
+    if (currentPublication.value) {
+      await editorStore.fetchArticles(currentPublication.value.id)
+    }
+    console.log('✅ Articles refreshed')
+  } catch (error) {
+    console.error('❌ Error refreshing articles:', error)
   }
 }
 

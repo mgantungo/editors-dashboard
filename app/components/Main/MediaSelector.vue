@@ -305,9 +305,23 @@ const clearSelection = () => {
 }
 
 // FIXED: Emit all selected media at once
+/*
 const insertSelectedMedia = () => {
   if (selectedMedia.value.length > 0) {
     // Emit all selected media items as an array
+    emit('multiple-media-selected', selectedMedia.value)
+    handleClose()
+  }
+}
+*/
+
+const insertSelectedMedia = () => {
+  if (selectedMedia.value.length > 0) {
+    if (selectedMedia.value.length === 1) {
+      // Emit single media for backward compatibility
+      emit('media-selected', selectedMedia.value[0])
+    }
+    // Always emit multiple media
     emit('multiple-media-selected', selectedMedia.value)
     handleClose()
   }

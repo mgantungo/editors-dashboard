@@ -20,63 +20,8 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   // Transform API article to match component expectations
-/*
-  const transformApiArticle = (apiArticle) => {
-    // Extract category ID (already a number in API response)
-    const categoryId = apiArticle.category || null
-    
-    // Extract publication ID (already a number in API response)
-    const publicationId = apiArticle.publicationId || null
-    
-    // Extract author IDs from the authorIds array
-    const authorIds = Array.isArray(apiArticle.authorIds) ? apiArticle.authorIds : []
-    
-    // Determine status
-    const status = apiArticle.status || (apiArticle.publishedAt ? 'published' : 'draft')
-    
-    return {
-      // Core fields
-      id: apiArticle.id,
-      title: apiArticle.title,
-      status: status,
-      category: categoryId,
-      authors: authorIds, // Array of author IDs for ArticleRow lookup
-      publishedAt: apiArticle.publishedAt || null,
-      live: apiArticle.live !== undefined ? apiArticle.live : !!apiArticle.publishedAt,
-      
-      // Feature flags
-      featured: apiArticle.featured || false,
-      breakingNews: apiArticle.breakingNews || false,
-      breakingDuration: apiArticle.breakingDuration || null,
-      
-      // Content fields
-      premium: apiArticle.premium || false,
-      tags: Array.isArray(apiArticle.tags) ? apiArticle.tags : [],
-      summary: apiArticle.summary || '',
-      content: apiArticle.content || '',
-      
-      // Featured image
-      featuredImage: apiArticle.featuredImage || null,
-      
-      // Album
-      album: Array.isArray(apiArticle.album) ? apiArticle.album : [],
-      
-      // Additional fields
-      secondaryCategory: apiArticle.secondaryCategory || null,
-      publicationId: publicationId,
-      
-      // Timestamps
-      createdAt: apiArticle.createdAt,
-      updatedAt: apiArticle.updatedAt,
-      
-      // Store original API data for reference
-      _raw: apiArticle,
-      // Store full author objects for reference
-      _authorsData: apiArticle.authors || []
-    }
-  }
-  */
 
+/*
   const transformApiArticle = (apiArticle) => {
   // Extract category ID
   const categoryId = apiArticle.category || null;
@@ -133,6 +78,102 @@ export const useEditorStore = defineStore('editor', () => {
     _authorsData: apiArticle.authors || []
   }
 }
+*/
+
+const transformApiArticle = (apiArticle) => {
+  console.log('🔄 Transforming API article:', apiArticle)
+  
+  // Extract category ID
+  const categoryId = apiArticle.category || null;
+  
+  // Extract publication ID
+  const publicationId = apiArticle.publicationId || null;
+  
+  // Extract author IDs
+  const authorIds = Array.isArray(apiArticle.authorIds) ? apiArticle.authorIds : [];
+  
+  // Determine status
+  const status = apiArticle.view_status || apiArticle.status || 'draft';
+  
+  // Determine live status
+  const live = apiArticle.live || false;
+  
+  // Format featured image
+  let featuredImage = null;
+  if (apiArticle.featuredImage) {
+    console.log('🖼️ Featured image from API:', apiArticle.featuredImage);
+    featuredImage = apiArticle.featuredImage;
+  } else if (apiArticle.featured_image) {
+    // Handle different response formats
+    const img = apiArticle.featured_image;
+    console.log('🖼️ Featured_image from API:', img);
+    featuredImage = {
+      id: img.id,
+      url: img.url,
+      alt: img.alternativeText || '',
+      caption: img.caption || '',
+      name: img.name,
+      mime: img.mime,
+      size: img.size
+    };
+  } else {
+    console.log('⚠️ No featured image found in API response');
+  }
+  
+  const transformed = {
+    // Core fields
+    id: apiArticle.id,
+    wp_id: apiArticle.wp_id,
+    title: apiArticle.title,
+    slug: apiArticle.slug,
+    status: status,
+    category: categoryId,
+    authors: authorIds,
+    publishedAt: apiArticle.publishedAt || apiArticle.wp_published_at || null,
+    live: live,
+    
+    // Feature flags
+    featured: apiArticle.featured || false,
+    breakingNews: apiArticle.breakingNews || false,
+    breakingDuration: apiArticle.breakingDuration || null,
+    
+    // Content fields
+    premium: apiArticle.premium || apiArticle.isPremium || false,
+    tags: Array.isArray(apiArticle.tags) ? apiArticle.tags : [],
+    summary: apiArticle.summary || apiArticle.excerpt || '',
+    content: apiArticle.content || '',
+    
+    // Featured image
+    featuredImage: featuredImage,
+    
+    // Album
+    album: Array.isArray(apiArticle.album) ? apiArticle.album : [],
+    
+    // Additional fields
+    secondaryCategory: apiArticle.secondaryCategory || null,
+    publicationId: publicationId,
+    
+    // Timestamps
+    createdAt: apiArticle.createdAt,
+    updatedAt: apiArticle.updatedAt,
+    
+    // SEO fields
+    seo_title: apiArticle.seo_title,
+    seo_description: apiArticle.seo_description,
+    
+    // Views counter
+    views: apiArticle.views || 0,
+    
+    // Store original API data
+    _raw: apiArticle,
+    _authorsData: apiArticle.authors || []
+  }
+  
+  console.log('✅ Transformed article:', transformed)
+  return transformed
+}
+
+
 
   // Extract and transform authors from articles
   const extractAuthorsFromArticles = (articlesArray) => {
@@ -425,58 +466,7 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   // Create article
-  /*
-  const createArticle = async (articleData) => {
-    try {
-      setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const authStore = useAuthStore()
-      const newArticle = {
-        id: Date.now(),
-        ...articleData,
-        createdBy: authStore.user?.id,
-        createdByName: authStore.user?.name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: articleData.status || 'draft',
-        live: articleData.live || false,
-        authors: articleData.authors || [authStore.user?.id || 1],
-        publicationId: articleData.publicationId || currentPublication.value?.id,
-        // Add full author data
-        _authorsData: [{
-          id: authStore.user?.id || 1,
-          username: authStore.user?.username || 'user',
-          displayName: authStore.user?.name || 'Current User',
-          firstName: authStore.user?.name?.split(' ')[0] || 'Current',
-          lastName: authStore.user?.name?.split(' ')[1] || 'User',
-          email: authStore.user?.email || ''
-        }]
-      }
-      articles.value.push(newArticle)
-      
-      // Update authors list if new author
-      const newAuthor = {
-        id: authStore.user?.id || 1,
-        name: authStore.user?.name || 'Current User',
-        username: authStore.user?.username || 'user',
-        displayName: authStore.user?.name || 'Current User',
-        email: authStore.user?.email || ''
-      }
-      if (!authors.value.some(a => a.id === newAuthor.id)) {
-        authors.value.push(newAuthor)
-      }
-      
-      return newArticle
-    } catch (err) {
-      setError(err.message || 'Failed to create article')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
-  */
-
+/*
 const createArticle = async (articleData) => {
     try {
       setLoading(true)
@@ -572,37 +562,160 @@ const createArticle = async (articleData) => {
       setLoading(false)
     }
   }
-
-  // Update article
-  /*
-  const updateArticle = async (articleId, articleData) => {
-    try {
-      setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const authStore = useAuthStore()
-      const index = articles.value.findIndex(article => article.id === parseInt(articleId))
-      if (index === -1) throw new Error('Article not found')
-      
-      const updatedArticle = {
-        ...articles.value[index],
-        ...articleData,
-        updatedBy: authStore.user?.id,
-        updatedByName: authStore.user?.name,
-        updatedAt: new Date().toISOString()
-      }
-      articles.value[index] = updatedArticle
-      return updatedArticle
-    } catch (err) {
-      setError(err.message || 'Failed to update article')
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
-
   */
 
+const createArticle = async (articleData) => {
+  try {
+    setLoading(true)
+    const authStore = useAuthStore()
+    const baseUrl = getBaseUrl()
+    
+    console.log('🆕 Creating new article:', articleData.title)
+    console.log('📊 Article data for API:', articleData)
+    console.log('🖼️ Featured image data:', articleData.featuredImage)
+    
+    // Create FormData for file upload
+    const formData = new FormData()
+    
+    // Prepare the data object
+    const postData = {
+      // Basic fields
+      title: articleData.title,
+      content: articleData.content,
+      summary: articleData.summary || '',
+      
+      // Status and publishing
+      status: articleData.status || 'draft',
+      publishedAt: articleData.publishedAt || null,
+      live: articleData.live || false,
+      
+      // Feature flags
+      featured: articleData.featured || false,
+      breakingNews: articleData.breakingNews || false,
+      breakingDuration: articleData.breakingDuration || null,
+      premium: articleData.premium || false,
+      
+      // Relations
+      authors: articleData.authors?.map(a => {
+        if (typeof a === 'object' && a.id) {
+          return a.id;
+        }
+        return a;
+      }) || [],
+      category: articleData.category || null,
+      secondaryCategory: articleData.secondaryCategory || null,
+      tags: articleData.tags || [],
+      
+      // Publication
+      publicationId: articleData.publicationId || currentPublication.value?.id,
+    }
+    
+    console.log('📝 Post data:', postData)
+    
+    // Add JSON data as a single field (stringified)
+    formData.append('data', JSON.stringify(postData))
+    
+    // Add featured image file if exists
+    if (articleData.featuredImage?.file) {
+      console.log('📤 Adding featured image file to upload:', articleData.featuredImage.file.name)
+      formData.append('files.featuredImage', articleData.featuredImage.file)
+      
+      // Log what's in FormData
+      console.log('📁 FormData has featured image:', articleData.featuredImage.file instanceof File)
+    } else if (articleData.featuredImage?.id) {
+      console.log('🆔 Using existing featured image ID:', articleData.featuredImage.id)
+      // If it's already an ID from media library, include it in the data
+      const dataStr = formData.get('data')
+      const dataObj = JSON.parse(dataStr)
+      dataObj.featuredImage = { id: articleData.featuredImage.id }
+      formData.set('data', JSON.stringify(dataObj))
+    }
+    
+    // Log FormData contents for debugging
+    console.log('📋 FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`)
+      } else if (key === 'data') {
+        console.log(`  ${key}:`, JSON.parse(value))
+      } else {
+        console.log(`  ${key}:`, value)
+      }
+    }
+    
+    console.log('📤 Sending to API via FormData')
+    
+    // Call the save API endpoint with FormData
+    // IMPORTANT: Don't use $fetch for FormData with files - use fetch directly
+    const response = await fetch(`${baseUrl}/api/posts/save`, {
+      method: 'POST',
+      body: formData,
+      // IMPORTANT: Don't set Content-Type header - let browser set it with boundary
+      headers: {
+        'Accept': 'application/json',
+      }
+    })
+    
+    console.log('📡 Response status:', response.status)
+    
+    if (!response.ok) {
+      let errorText = 'Unknown error'
+      try {
+        const errorData = await response.json()
+        console.error('❌ API error response:', errorData)
+        errorText = errorData.message || JSON.stringify(errorData)
+      } catch (e) {
+        errorText = await response.text()
+      }
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+    
+    const responseData = await response.json()
+    console.log('✅ Article created successfully:', responseData)
+    
+    // Transform the response to match our format
+    const newArticle = transformApiArticle(responseData)
+    
+    // Add to local articles array
+    articles.value.unshift(newArticle)
+    
+    // Update authors if needed
+    if (responseData.authors && responseData.authors.length > 0) {
+      responseData.authors.forEach(author => {
+        if (!authors.value.some(a => a.id === author.id)) {
+          authors.value.push({
+            id: author.id,
+            name: author.displayName || author.username,
+            username: author.username,
+            displayName: author.displayName,
+            firstName: author.firstName,
+            lastName: author.lastName,
+            email: author.email
+          })
+        }
+      })
+    }
+    
+    console.log('📝 Article added to local store')
+    
+    // Refresh articles list to ensure ArticleTable updates
+    await fetchArticles()
+    
+    return newArticle
+    
+  } catch (err) {
+    console.error('❌ Error creating article:', err)
+    console.error('❌ Error details:', err.message)
+    console.error('❌ Error stack:', err.stack)
+    setError(err.message || 'Failed to create article')
+    throw err
+  } finally {
+    setLoading(false)
+  }
+}
+
+  // Update article
+/*
 const updateArticle = async (articleId, articleData) => {
   try {
     setLoading(true)
@@ -704,10 +817,113 @@ const updateArticle = async (articleId, articleData) => {
     setLoading(false)
   }
 }
+*/
 
+const updateArticle = async (articleId, articleData) => {
+  try {
+    setLoading(true)
+    const authStore = useAuthStore()
+    const baseUrl = getBaseUrl()
+    
+    console.log('🔄 Updating article:', articleId)
+    console.log('📊 Update data:', articleData)
+    
+    // Create FormData
+    const formData = new FormData()
+    
+    // Add JSON data with ID
+    formData.append('data', JSON.stringify({
+      id: articleId,
+      title: articleData.title,
+      content: articleData.content,
+      summary: articleData.summary || '',
+      status: articleData.status || 'draft',
+      publishedAt: articleData.publishedAt || null,
+      live: articleData.live || false,
+      featured: articleData.featured || false,
+      breakingNews: articleData.breakingNews || false,
+      breakingDuration: articleData.breakingDuration || null,
+      premium: articleData.premium || false,
+      authors: articleData.authors?.map(a => typeof a === 'object' ? a.id : a) || [],
+      category: articleData.category || null,
+      secondaryCategory: articleData.secondaryCategory || null,
+      tags: articleData.tags || [],
+      publicationId: articleData.publicationId || currentPublication.value?.id,
+    }))
+    
+    // Add featured image file if exists
+    if (articleData.featuredImage?.file) {
+      console.log('📤 Adding featured image file to upload')
+      formData.append('files.featuredImage', articleData.featuredImage.file)
+    } else if (articleData.featuredImage?.id) {
+      const jsonData = JSON.parse(formData.get('data'))
+      jsonData.featuredImage = { id: articleData.featuredImage.id }
+      formData.set('data', JSON.stringify(jsonData))
+    }
+    
+    // Add album files if they exist
+    if (articleData.album && articleData.album.length > 0) {
+      console.log('📸 Adding album images:', articleData.album.length)
+      articleData.album.forEach((image, index) => {
+        if (image.file) {
+          formData.append('files.album', image.file)
+        }
+      })
+    }
+    
+    console.log('📤 Sending update to API')
+    
+    const response = await $fetch(`${baseUrl}/api/posts/save`, {
+      method: 'POST',
+      body: formData,
+    })
+    
+    console.log('✅ Article updated successfully:', response)
+    
+    const updatedArticle = transformApiArticle(response)
+    
+    // Update in local articles array
+    const index = articles.value.findIndex(article => article.id === parseInt(articleId))
+    if (index !== -1) {
+      articles.value[index] = updatedArticle
+      console.log('📝 Article updated in local store')
+    } else {
+      console.warn('⚠️ Article not found in local store, adding it')
+      articles.value.unshift(updatedArticle)
+    }
+    
+    // Update authors if needed
+    if (response.authors && response.authors.length > 0) {
+      response.authors.forEach(author => {
+        if (!authors.value.some(a => a.id === author.id)) {
+          authors.value.push({
+            id: author.id,
+            name: author.displayName || author.username,
+            username: author.username,
+            displayName: author.displayName,
+            firstName: author.firstName,
+            lastName: author.lastName,
+            email: author.email
+          })
+        }
+      })
+    }
+    
+    // FIX: Refresh articles list
+    await fetchArticles()
+    
+    return updatedArticle
+    
+  } catch (err) {
+    console.error('❌ Error updating article:', err)
+    setError(err.data?.message || err.message || 'Failed to update article')
+    throw err
+  } finally {
+    setLoading(false)
+  }
+}
 
-
-  const clearError = () => {
+const clearError = () => {
     error.value = null
   }
 

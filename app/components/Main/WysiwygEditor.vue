@@ -153,9 +153,16 @@
     </div>
 
     <!-- Media Selector -->
+  <!----
     <MediaSelector
       v-if="showMediaSelector && allowImages"
       @media-selected="insertMedia"
+      @close="showMediaSelector = false"
+    />
+  -->
+    <MediaSelector
+      v-if="showMediaSelector && allowImages"
+      @multiple-media-selected="insertMultipleMedia" 
       @close="showMediaSelector = false"
     />
 
@@ -550,13 +557,34 @@ const insertTable = () => {
 const insertHorizontalRule = () => {
   execCommand('insertHorizontalRule', false, null)
 }
-
+/*
 const insertMedia = (mediaItem) => {
   if (!props.allowImages) return
   
   const imgHTML = `<img src="${mediaItem.url}" alt="${mediaItem.alt || ''}" class="max-w-full h-auto" />`
   execCommand('insertHTML', false, imgHTML)
   showMediaSelector.value = false
+}
+*/
+const insertMultipleMedia = (mediaItems) => {
+    if (!props.allowImages || !mediaItems || mediaItems.length === 0) return
+    
+    // Create HTML for all selected images
+    const imagesHTML = mediaItems.map(mediaItem => 
+      `<img src="${mediaItem.url}" alt="${mediaItem.alt || ''}" class="max-w-full h-auto my-2" />`
+    ).join('')
+    
+    execCommand('insertHTML', false, imagesHTML)
+    showMediaSelector.value = false
+}
+
+  // (Optional) Keep insertMedia for backward compatibility if needed elsewhere
+const insertMedia = (mediaItem) => {
+    if (!props.allowImages) return
+    
+    const imgHTML = `<img src="${mediaItem.url}" alt="${mediaItem.alt || ''}" class="max-w-full h-auto" />`
+    execCommand('insertHTML', false, imgHTML)
+    showMediaSelector.value = false
 }
 
 const pastePlainText = () => {
