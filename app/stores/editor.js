@@ -630,6 +630,24 @@ const createArticle = async (articleData) => {
       dataObj.featuredImage = { id: articleData.featuredImage.id }
       formData.set('data', JSON.stringify(dataObj))
     }
+
+    // Add inline images files if they exist
+    if (articleData.inlineImages && articleData.inlineImages.length > 0) {
+      console.log('📷 Adding inline images to upload:', articleData.inlineImages.length)
+      
+      // Add each inline image file
+      articleData.inlineImages.forEach((image, index) => {
+        console.log(`  - Image ${index + 1}: ${image.file.name}`)
+        formData.append('files.inlineImages', image.file)
+        
+        // Add metadata for each image
+        formData.append('inlineImagesMeta', JSON.stringify({
+          id: image.id,
+          alt: image.alt,
+          format: image.format
+        }))
+      })
+    }
     
     // Log FormData contents for debugging
     console.log('📋 FormData entries:')
@@ -644,6 +662,27 @@ const createArticle = async (articleData) => {
     }
     
     console.log('📤 Sending to API via FormData')
+
+    // Log FormData contents for debugging  -----
+    console.log('📋 FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`)
+      } else if (key === 'data') {
+        const parsed = JSON.parse(value)
+        console.log(`  ${key}:`, {
+          title: parsed.title,
+          hasInlineImages: !!parsed.inlineImages,
+          inlineImagesCount: parsed.inlineImages?.length || 0
+        })
+      } else if (key === 'inlineImagesMeta') {
+        console.log(`  ${key}:`, JSON.parse(value))
+      } else {
+        console.log(`  ${key}:`, value)
+      }
+    }
+
+
     
     // Call the save API endpoint with FormData
     // IMPORTANT: Don't use $fetch for FormData with files - use fetch directly
@@ -860,6 +899,26 @@ const updateArticle = async (articleId, articleData) => {
       jsonData.featuredImage = { id: articleData.featuredImage.id }
       formData.set('data', JSON.stringify(jsonData))
     }
+
+    
+    // Add inline images files if they exist
+    if (articleData.inlineImages && articleData.inlineImages.length > 0) {
+      console.log('📷 Updating article with inline images:', articleData.inlineImages.length)
+      
+      // Add each inline image file
+      articleData.inlineImages.forEach((image, index) => {
+        console.log(`  - Image ${index + 1}: ${image.file.name}`)
+        formData.append('files.inlineImages', image.file)
+        
+        // Add metadata for each image
+        formData.append('inlineImagesMeta', JSON.stringify({
+          id: image.id,
+          alt: image.alt,
+          format: image.format
+        }))
+      })
+    }
+
     
     // Add album files if they exist
     if (articleData.album && articleData.album.length > 0) {
@@ -872,6 +931,28 @@ const updateArticle = async (articleId, articleData) => {
     }
     
     console.log('📤 Sending update to API')
+
+    // Log FormData contents for debugging ------
+    console.log('📋 FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`)
+      } else if (key === 'data') {
+        const parsed = JSON.parse(value)
+        console.log(`  ${key}:`, {
+          title: parsed.title,
+          hasInlineImages: !!parsed.inlineImages,
+          inlineImagesCount: parsed.inlineImages?.length || 0
+        })
+      } else if (key === 'inlineImagesMeta') {
+        console.log(`  ${key}:`, JSON.parse(value))
+      } else {
+        console.log(`  ${key}:`, value)
+      }
+    }
+
+
+
     
     const response = await $fetch(`${baseUrl}/api/posts/save`, {
       method: 'POST',

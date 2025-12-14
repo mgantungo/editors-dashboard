@@ -57,24 +57,24 @@
       <div class="toolbar-divider"></div>
       
       <!-- Alignment -->
-      <button @click="execCommand('justifyLeft')" class="toolbar-btn" title="Align Left">◀</button>
-      <button @click="execCommand('justifyCenter')" class="toolbar-btn" title="Align Center">▣</button>
-      <button @click="execCommand('justifyRight')" class="toolbar-btn" title="Align Right">▶</button>
+      <button @click="execCommand('justifyLeft')" class="toolbar-btn" title="Align Left">⫷</button>
+      <button @click="execCommand('justifyCenter')" class="toolbar-btn" title="Align Center">⫸</button>
+      <button @click="execCommand('justifyRight')" class="toolbar-btn" title="Align Right">⫹</button>
       
       <div class="toolbar-divider"></div>
       
       <!-- Lists & Indentation -->
       <button @click="execCommand('insertUnorderedList')" class="toolbar-btn" title="Bullet List">•</button>
       <button @click="execCommand('insertOrderedList')" class="toolbar-btn" title="Numbered List">1.</button>
-      <button @click="execCommand('outdent')" class="toolbar-btn" title="Decrease Indent">◁</button>
-      <button @click="execCommand('indent')" class="toolbar-btn" title="Increase Indent">▷</button>
+      <button @click="execCommand('outdent')" class="toolbar-btn" title="Decrease Indent">←</button>
+      <button @click="execCommand('indent')" class="toolbar-btn" title="Increase Indent">→</button>
       
       <div class="toolbar-divider"></div>
       
       <!-- Links & Tables -->
       <button @click="showLinkDialog = true" class="toolbar-btn" title="Insert Link">🔗</button>
-      <button @click="insertTable" class="toolbar-btn" title="Insert Table">⬚</button>
-      <button @click="insertHorizontalRule" class="toolbar-btn" title="Horizontal Line">—</button>
+      <button @click="insertTable" class="toolbar-btn" title="Insert Table">⧫</button>
+      <button @click="insertHorizontalRule" class="toolbar-btn" title="Horizontal Line">―</button>
       
       <div class="toolbar-divider"></div>
       
@@ -122,6 +122,7 @@
       :contenteditable="!readonly"
       @input="handleInput"
       @blur="handleBlur"
+      @paste="handlePaste"
       @keydown="handleKeyDown"
       @mouseup="saveSelection"
       @keyup="saveSelection"
@@ -249,7 +250,7 @@
                   :max="originalWidth"
                   class="slider flex-grow"
                 >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.cropX }}</span>
+                <span class="text-sm text-gray-600 w-16">{{ imageControls.cropX }}px</span>
               </div>
               <div class="crop-controls flex items-center gap-3">
                 <label class="w-20 font-medium text-gray-700">Y Position</label>
@@ -261,7 +262,7 @@
                   :max="originalHeight"
                   class="slider flex-grow"
                 >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.cropY }}</span>
+                <span class="text-sm text-gray-600 w-16">{{ imageControls.cropY }}px</span>
               </div>
               <div class="crop-controls flex items-center gap-3">
                 <label class="w-20 font-medium text-gray-700">Width</label>
@@ -269,11 +270,11 @@
                   type="range" 
                   v-model.number="imageControls.cropWidth" 
                   @input="applyCropPreview"
-                  min="10"
+                  min="1"
                   :max="originalWidth"
                   class="slider flex-grow"
                 >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.cropWidth }}</span>
+                <span class="text-sm text-gray-600 w-16">{{ imageControls.cropWidth }}px</span>
               </div>
               <div class="crop-controls flex items-center gap-3">
                 <label class="w-20 font-medium text-gray-700">Height</label>
@@ -281,63 +282,62 @@
                   type="range" 
                   v-model.number="imageControls.cropHeight" 
                   @input="applyCropPreview"
-                  min="10"
+                  min="1"
                   :max="originalHeight"
                   class="slider flex-grow"
                 >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.cropHeight }}</span>
+                <span class="text-sm text-gray-600 w-16">{{ imageControls.cropHeight }}px</span>
               </div>
             </div>
             <button @click="applyCrop" class="btn-primary mt-4">Apply Crop</button>
           </div>
 
-          <!-- Adjust Tab -->
+          <!-- Adjustments Tab -->
           <div v-if="activeTab === 'adjust'" class="control-group space-y-4">
-            <div class="adjust-controls space-y-3">
-              <div class="flex items-center gap-3">
-                <label class="w-24 font-medium text-gray-700">Brightness</label>
-                <input 
-                  type="range" 
-                  v-model.number="imageControls.brightness" 
-                  @input="applyAdjustments"
-                  min="0"
-                  max="200"
-                  class="slider flex-grow"
-                >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.brightness }}%</span>
-              </div>
-              <div class="flex items-center gap-3">
-                <label class="w-24 font-medium text-gray-700">Contrast</label>
-                <input 
-                  type="range" 
-                  v-model.number="imageControls.contrast" 
-                  @input="applyAdjustments"
-                  min="0"
-                  max="200"
-                  class="slider flex-grow"
-                >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.contrast }}%</span>
-              </div>
-              <div class="flex items-center gap-3">
-                <label class="w-24 font-medium text-gray-700">Saturation</label>
-                <input 
-                  type="range" 
-                  v-model.number="imageControls.saturation" 
-                  @input="applyAdjustments"
-                  min="0"
-                  max="200"
-                  class="slider flex-grow"
-                >
-                <span class="text-sm text-gray-600 w-12 text-right">{{ imageControls.saturation }}%</span>
-              </div>
+            <div class="control-row flex items-center gap-4">
+              <label class="w-24 font-medium text-gray-700">Brightness</label>
+              <input 
+                type="range" 
+                v-model.number="imageControls.brightness" 
+                @input="applyAdjustments"
+                min="0"
+                max="200"
+                class="slider flex-grow"
+              >
+              <span class="text-gray-600 w-12">{{ imageControls.brightness }}%</span>
             </div>
-            <button @click="resetAdjustments" class="btn-secondary mt-4">Reset Adjustments</button>
+            <div class="control-row flex items-center gap-4">
+              <label class="w-24 font-medium text-gray-700">Contrast</label>
+              <input 
+                type="range" 
+                v-model.number="imageControls.contrast" 
+                @input="applyAdjustments"
+                min="0"
+                max="200"
+                class="slider flex-grow"
+              >
+              <span class="text-gray-600 w-12">{{ imageControls.contrast }}%</span>
+            </div>
+            <div class="control-row flex items-center gap-4">
+              <label class="w-24 font-medium text-gray-700">Saturation</label>
+              <input 
+                type="range" 
+                v-model.number="imageControls.saturation" 
+                @input="applyAdjustments"
+                min="0"
+                max="200"
+                class="slider flex-grow"
+              >
+              <span class="text-gray-600 w-12">{{ imageControls.saturation }}%</span>
+            </div>
+            <button @click="resetAdjustments" class="btn-secondary">Reset Adjustments</button>
           </div>
         </div>
 
-        <div class="dialog-footer flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-          <button @click="resetImage" class="btn-cancel">Reset All</button>
-          <button @click="applyAllChanges" class="btn-primary">Done</button>
+        <div class="dialog-actions flex gap-3 justify-end p-6 border-t border-gray-200 bg-gray-50">
+          <button @click="applyAllChanges" class="btn-primary">Apply All</button>
+          <button @click="resetImage" class="btn-secondary">Reset</button>
+          <button @click="closeImageControls" class="btn-cancel">Cancel</button>
         </div>
       </div>
     </div>
@@ -345,64 +345,55 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import MediaSelector from './MediaSelector.vue'
-import EmojiTray from './EmojiTray.vue'
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
 
-// Props
+// Import components
+import EmojiTray from './EmojiTray.vue'
+import MediaSelector from './MediaSelector.vue'
+
 const props = defineProps({
-  modelValue: {
-    type: String,
-    default: ''
-  },
-  placeholder: {
-    type: String,
-    default: 'Start typing...'
-  },
-  size: {
-    type: String,
-    default: 'medium',
-    validator: (value) => ['small', 'medium', 'large', 'compact'].includes(value)
-  },
-  readonly: {
-    type: Boolean,
-    default: false
-  },
+  modelValue: String,
+  placeholder: String,
+  readonly: Boolean,
+  compact: Boolean,
+  withEmoji: Boolean,
   allowImages: {
     type: Boolean,
     default: true
   },
-  withEmoji: {
-    type: Boolean,
-    default: false
+  size: {
+    type: String,
+    default: 'medium',
+    validator: (value) => ['small', 'medium', 'large'].includes(value)
   }
 })
 
-// Emits
 const emit = defineEmits(['update:modelValue', 'emoji-inserted', 'inline-images-changed'])
 
 // Refs
 const editorRef = ref(null)
-const internalValue = ref(props.modelValue || '')
-const isInternalUpdate = ref(false)
-const lastSelection = ref(null)
-const showLinkDialog = ref(false)
-const linkUrl = ref('')
-const showMediaSelector = ref(false)
-const showEmojiTray = ref(false)
-
-// NEW: Track inline images
-const inlineImages = ref([])
-
-// Image Controls
-const selectedImage = ref(null)
-const showImageControls = ref(false)
 const previewImage = ref(null)
 const previewCanvas = ref(null)
+const selectedImage = ref(null)
+
+// State
+const internalValue = ref(props.modelValue || '')
+const showEmojiTray = ref(false)
+const showLinkDialog = ref(false)
+const showMediaSelector = ref(false)
+const showImageControls = ref(false)
+const linkUrl = ref('')
+const lastSelection = ref(null)
+const isInternalUpdate = ref(false)
 const activeTab = ref('resize')
 const originalWidth = ref(0)
 const originalHeight = ref(0)
+const aspectRatio = ref(1)
 
+// NEW: Track inline images that need to be uploaded
+const inlineImages = ref([])
+
+// Image controls
 const imageControls = ref({
   width: 0,
   height: 0,
@@ -416,6 +407,7 @@ const imageControls = ref({
   saturation: 100
 })
 
+// Constants
 const controlTabs = [
   { id: 'resize', label: 'Resize' },
   { id: 'crop', label: 'Crop' },
@@ -423,14 +415,17 @@ const controlTabs = [
 ]
 
 const presetSizes = [
-  { name: 'Small', width: 300, height: null },
-  { name: 'Medium', width: 600, height: null },
-  { name: 'Large', width: 900, height: null },
-  { name: 'Full', width: 1200, height: null }
+  { name: 'Small', width: 300, height: 200 },
+  { name: 'Medium', width: 600, height: 400 },
+  { name: 'Large', width: 800, height: 600 },
+  { name: 'Original', width: 0, height: 0 }
 ]
 
 // Computed
-const sizeClass = computed(() => props.size)
+const sizeClass = computed(() => {
+  if (props.compact) return 'compact'
+  return props.size
+})
 
 const canvasStyle = computed(() => {
   if (!selectedImage.value) return {}
@@ -482,11 +477,9 @@ const extractInlineImages = (content) => {
         
         const blob = new Blob(byteArrays, { type: `image/${format}` })
         
-        // Create a File object with sanitized filename
+        // Create a File object
         const extension = format === 'svg+xml' ? 'svg' : format
-        const sanitizedName = sanitizeFilename(alt)
-        const timestamp = Date.now()
-        const filename = `${sanitizedName}-${timestamp}.${extension}`
+        const filename = `${sanitizeFilename(alt)}-${Date.now()}.${extension}`
         const file = new File([blob], filename, { type: `image/${format}` })
         
         images.push({
@@ -502,16 +495,12 @@ const extractInlineImages = (content) => {
         img.setAttribute('data-inline-id', imageId)
       }
     }
-    // Also check for blob URLs (shouldn't happen with our new paste handler, but just in case)
-    else if (src && src.startsWith('blob:')) {
-      console.warn('Blob URL detected in content - this should be converted to base64:', src)
-    }
   })
   
   return images
 }
 
-// NEW: Sanitize filename to be server-friendly
+// NEW: Sanitize filename
 const sanitizeFilename = (filename) => {
   if (!filename) return 'image'
   
@@ -519,13 +508,13 @@ const sanitizeFilename = (filename) => {
     .toString()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
-    .replace(/[^a-z0-9\-]+/g, '') // Remove non-alphanumeric characters except hyphens
-    .replace(/\-\-+/g, '-') // Replace multiple hyphens with single hyphen
-    .replace(/^-+/, '') // Remove leading hyphens
-    .replace(/-+$/, '') // Remove trailing hyphens
-    .substring(0, 50) // Limit length
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '')
+    .substring(0, 50)
     || 'image'
 }
 
@@ -588,17 +577,6 @@ const handleInput = () => {
   if (isInternalUpdate.value) return
   if (editorRef.value) {
     saveSelection()
-    
-    // NEW: Check for and remove blob URLs before processing
-    const images = editorRef.value.querySelectorAll('img[src^="blob:"]')
-    if (images.length > 0) {
-      console.warn('Detected blob URLs in content - this should not happen!')
-      images.forEach(img => {
-        console.warn('Removing blob URL image:', img.src)
-        img.remove()
-      })
-    }
-    
     internalValue.value = editorRef.value.innerHTML
     
     // NEW: Extract and emit inline images
@@ -614,244 +592,25 @@ const handleBlur = () => {
   cleanHTML()
 }
 
-const handlePaste = async (event) => {
-  console.log('🔍 PASTE EVENT TRIGGERED')
-  console.log('Clipboard data:', event.clipboardData)
-  
-  const items = event.clipboardData?.items
-  
-  if (!items) {
-    console.log('❌ No clipboard items')
-    setTimeout(() => {
-      cleanHTML()
-      handleInput()
-    }, 0)
-    return
-  }
-  
-  console.log('📋 Clipboard items count:', items.length)
-  
-  // Check if there's an image in the clipboard
-  let hasImage = false
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i]
-    console.log(`Item ${i}: type=${item.type}, kind=${item.kind}`)
-    if (item.type.indexOf('image') !== -1) {
-      hasImage = true
-      break
-    }
-  }
-  
-  console.log('📷 Has image:', hasImage)
-  
-  // If there's an image, handle it specially
-  if (hasImage) {
-    console.log('🚫 PREVENTING DEFAULT for image paste')
-    event.preventDefault()
-    event.stopPropagation()
-    event.stopImmediatePropagation()
-    
-    if (!props.allowImages) {
-      alert('Images are not allowed in this field')
-      return
-    }
-    
-    // Process the image
-    for (let item of items) {
-      if (item.type.indexOf('image') !== -1) {
-        console.log('📥 Getting image file from clipboard')
-        const file = item.getAsFile()
-        console.log('File:', file)
-        
-        if (file) {
-          console.log('✅ Converting to base64...')
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const base64Data = e.target.result
-            console.log('✅ Base64 conversion complete, length:', base64Data.length)
-            
-            // Generate filename from alt or timestamp
-            const timestamp = Date.now()
-            const extension = file.type.split('/')[1] || 'png'
-            const filename = `pasted-image-${timestamp}.${extension}`
-            console.log('📝 Filename:', filename)
-            
-            // Save current selection
-            saveSelection()
-            
-            // Insert image at cursor position
-            const img = document.createElement('img')
-            img.src = base64Data
-            img.alt = filename.replace(/\.[^/.]+$/, '')
-            img.className = 'max-w-full h-auto my-2'
-            
-            console.log('✅ Image element created:', img)
-            
-            // Insert into editor
-            if (lastSelection.value) {
-              restoreSelection()
-              const range = lastSelection.value
-              range.deleteContents()
-              range.insertNode(img)
-              
-              // Move cursor after image
-              range.setStartAfter(img)
-              range.collapse(true)
-              
-              const selection = window.getSelection()
-              selection.removeAllRanges()
-              selection.addRange(range)
-              
-              console.log('✅ Image inserted at cursor position')
-            } else {
-              editorRef.value.appendChild(img)
-              console.log('✅ Image appended to editor')
-            }
-            
-            // Trigger input to extract the image
-            console.log('🔄 Triggering handleInput...')
-            nextTick(() => {
-              handleInput()
-            })
-          }
-          
-          reader.onerror = (error) => {
-            console.error('❌ FileReader error:', error)
-          }
-          
-          reader.readAsDataURL(file)
-        } else {
-          console.error('❌ Could not get file from clipboard item')
+const handlePaste = (event) => {
+  // Prevent image paste if not allowed
+  if (!props.allowImages) {
+    const items = event.clipboardData?.items
+    if (items) {
+      for (let item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          event.preventDefault()
+          alert('Images are not allowed in this field')
+          return
         }
-        break
-      }
-    }
-  } else {
-    console.log('ℹ️ No image, allowing default paste')
-    setTimeout(() => {
-      cleanHTML()
-      handleInput()
-    }, 0)
-  }
-}
-
-const handleDrop = async (event) => {
-  console.log('🔍 DROP EVENT TRIGGERED')
-  console.log('Drop data:', event.dataTransfer)
-  
-  const items = event.dataTransfer?.items || event.dataTransfer?.files
-  
-  if (!items) {
-    console.log('❌ No drop items')
-    return
-  }
-  
-  console.log('📦 Drop items count:', items.length)
-  
-  // Check if there's an image being dropped
-  let hasImage = false
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i]
-    const itemType = item.type || (item.kind === 'file' ? 'file' : '')
-    console.log(`Drop item ${i}: type=${itemType}, kind=${item.kind}`)
-    if (itemType.indexOf('image') !== -1) {
-      hasImage = true
-      break
-    }
-  }
-  
-  console.log('📷 Has image in drop:', hasImage)
-  
-  if (hasImage) {
-    console.log('🚫 PREVENTING DEFAULT for image drop')
-    event.preventDefault()
-    event.stopPropagation()
-    event.stopImmediatePropagation()
-    
-    if (!props.allowImages) {
-      alert('Images are not allowed in this field')
-      return
-    }
-    
-    // Process the image
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      const itemType = item.type || (item.kind === 'file' ? 'file' : '')
-      
-      if (itemType.indexOf('image') !== -1) {
-        console.log('📥 Getting image file from drop')
-        const file = item.getAsFile ? item.getAsFile() : item
-        console.log('Dropped file:', file)
-        
-        if (file) {
-          console.log('✅ Converting dropped image to base64...')
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const base64Data = e.target.result
-            console.log('✅ Base64 conversion complete, length:', base64Data.length)
-            
-            // Generate filename
-            const timestamp = Date.now()
-            const extension = file.type.split('/')[1] || 'png'
-            const filename = `dropped-image-${timestamp}.${extension}`
-            console.log('📝 Filename:', filename)
-            
-            // Insert image at drop position
-            const img = document.createElement('img')
-            img.src = base64Data
-            img.alt = filename.replace(/\.[^/.]+$/, '')
-            img.className = 'max-w-full h-auto my-2'
-            
-            console.log('✅ Image element created for drop:', img)
-            
-            // Try to get drop position
-            let inserted = false
-            if (document.caretRangeFromPoint) {
-              const range = document.caretRangeFromPoint(event.clientX, event.clientY)
-              if (range && editorRef.value.contains(range.startContainer)) {
-                range.insertNode(img)
-                range.setStartAfter(img)
-                range.collapse(true)
-                
-                const selection = window.getSelection()
-                selection.removeAllRanges()
-                selection.addRange(range)
-                inserted = true
-                console.log('✅ Image inserted at drop position')
-              }
-            }
-            
-            if (!inserted) {
-              editorRef.value.appendChild(img)
-              console.log('✅ Image appended to editor (fallback)')
-            }
-            
-            // Trigger input to extract the image
-            console.log('🔄 Triggering handleInput after drop...')
-            nextTick(() => {
-              handleInput()
-            })
-          }
-          
-          reader.onerror = (error) => {
-            console.error('❌ FileReader error on drop:', error)
-          }
-          
-          reader.readAsDataURL(file)
-        } else {
-          console.error('❌ Could not get file from drop item')
-        }
-        break
       }
     }
   }
-}
-
-const handleDragOver = (event) => {
-  // Prevent default to allow drop
-  if (props.allowImages) {
-    event.preventDefault()
-  }
+  
+  setTimeout(() => {
+    cleanHTML()
+    handleInput()
+  }, 0)
 }
 
 const handleKeyDown = (event) => {
@@ -889,209 +648,168 @@ const insertEmoji = (emoji) => {
 }
 
 const insertLink = () => {
-  if (!linkUrl.value) return
-  
-  restoreSelection()
-  
-  const selection = window.getSelection()
-  const selectedText = selection.toString()
-  
-  if (selectedText) {
+  if (linkUrl.value) {
     execCommand('createLink', false, linkUrl.value)
-  } else {
-    const link = document.createElement('a')
-    link.href = linkUrl.value
-    link.textContent = linkUrl.value
-    link.target = '_blank'
-    
-    const range = selection.getRangeAt(0)
-    range.insertNode(link)
-    
-    range.setStartAfter(link)
-    range.collapse(true)
-    selection.removeAllRanges()
-    selection.addRange(range)
   }
-  
-  linkUrl.value = ''
   showLinkDialog.value = false
-  handleInput()
+  linkUrl.value = ''
 }
 
 const insertTable = () => {
-  if (!editorRef.value) return
-  
-  const table = document.createElement('table')
-  table.className = 'border-collapse w-full my-4'
-  
-  for (let i = 0; i < 3; i++) {
-    const row = table.insertRow()
-    for (let j = 0; j < 3; j++) {
-      const cell = row.insertCell()
-      cell.className = 'p-2 border border-gray-300'
-      cell.textContent = ' '
-    }
-  }
-  
-  restoreSelection()
-  const range = window.getSelection().getRangeAt(0)
-  range.insertNode(table)
-  
-  range.setStartAfter(table)
-  range.collapse(true)
-  
-  const selection = window.getSelection()
-  selection.removeAllRanges()
-  selection.addRange(range)
-  
-  handleInput()
+  const tableHTML = `
+    <table border="1" class="w-full border-collapse my-4">
+      <tr><td class="p-2 border border-gray-300">Cell 1</td><td class="p-2 border border-gray-300">Cell 2</td></tr>
+      <tr><td class="p-2 border border-gray-300">Cell 3</td><td class="p-2 border border-gray-300">Cell 4</td></tr>
+    </table>
+  `
+  execCommand('insertHTML', false, tableHTML)
 }
 
 const insertHorizontalRule = () => {
-  execCommand('insertHorizontalRule')
+  execCommand('insertHorizontalRule', false, null)
 }
 
-const insertMultipleMedia = (selectedMedia) => {
-  if (!editorRef.value || !selectedMedia || selectedMedia.length === 0) return
+const insertMultipleMedia = (mediaItems) => {
+  if (!props.allowImages || !mediaItems || mediaItems.length === 0) return
   
-  restoreSelection()
-  const range = window.getSelection().getRangeAt(0)
+  // Create HTML for all selected images with alt text
+  const imagesHTML = mediaItems.map(mediaItem => 
+    `<img src="${mediaItem.url}" alt="${mediaItem.alt || mediaItem.name || ''}" class="max-w-full h-auto my-2" />`
+  ).join('')
   
-  selectedMedia.forEach((media, index) => {
-    const img = document.createElement('img')
-    img.src = media.url
-    img.alt = media.alt || media.name || 'Image'
-    img.className = 'max-w-full h-auto my-2'
-    
-    range.insertNode(img)
-    
-    if (index < selectedMedia.length - 1) {
-      const br = document.createElement('br')
-      range.setStartAfter(img)
-      range.insertNode(br)
-      range.setStartAfter(br)
-    } else {
-      range.setStartAfter(img)
-    }
-  })
-  
-  range.collapse(true)
-  
-  const selection = window.getSelection()
-  selection.removeAllRanges()
-  selection.addRange(range)
-  
+  execCommand('insertHTML', false, imagesHTML)
   showMediaSelector.value = false
-  handleInput()
 }
 
-const pastePlainText = async () => {
-  try {
-    const text = await navigator.clipboard.readText()
-    if (text) {
-      restoreSelection()
-      execCommand('insertText', false, text)
-    }
-  } catch (err) {
-    console.error('Failed to read clipboard:', err)
-  }
+const insertMedia = (mediaItem) => {
+  if (!props.allowImages) return
+  
+  const imgHTML = `<img src="${mediaItem.url}" alt="${mediaItem.alt || ''}" class="max-w-full h-auto" />`
+  execCommand('insertHTML', false, imgHTML)
+  showMediaSelector.value = false
+}
+
+const pastePlainText = () => {
+  navigator.clipboard.readText().then(text => {
+    execCommand('insertText', false, text)
+  })
 }
 
 const cleanHTML = () => {
   if (!editorRef.value) return
   
-  const content = editorRef.value.innerHTML
-  const cleaned = content
-    .replace(/<div>/g, '<p>')
-    .replace(/<\/div>/g, '</p>')
-    .replace(/<br\s*\/?>\s*<br\s*\/?>/g, '</p><p>')
+  let html = editorRef.value.innerHTML
   
-  if (cleaned !== content) {
-    updateEditorContent(cleaned)
+  // Remove scripts, styles, and event handlers
+  html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+  html = html.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+  html = html.replace(/on\w+="[^"]*"/g, '')
+  html = html.replace(/on\w+='[^']*'/g, '')
+  
+  // Remove images if not allowed
+  if (!props.allowImages) {
+    html = html.replace(/<img[^>]*>/gi, '')
+  }
+  
+  if (html !== editorRef.value.innerHTML) {
+    updateEditorContent(html)
   }
 }
 
 // Image Control Methods
-const openImageControls = (img) => {
-  selectedImage.value = img
-  originalWidth.value = img.naturalWidth || img.width
-  originalHeight.value = img.naturalHeight || img.height
+const openImageControls = (imgElement) => {
+  if (!props.allowImages) return
   
-  initializeImageData()
+  selectedImage.value = imgElement
   showImageControls.value = true
+  nextTick(() => {
+    initializeImageData()
+  })
 }
 
 const closeImageControls = () => {
   showImageControls.value = false
   selectedImage.value = null
+  resetImageControls()
 }
 
 const initializeImageData = () => {
   if (!selectedImage.value) return
-  
-  imageControls.value.width = selectedImage.value.width
-  imageControls.value.height = selectedImage.value.height
-  imageControls.value.cropX = 0
-  imageControls.value.cropY = 0
-  imageControls.value.cropWidth = selectedImage.value.width
-  imageControls.value.cropHeight = selectedImage.value.height
-  imageControls.value.brightness = 100
-  imageControls.value.contrast = 100
-  imageControls.value.saturation = 100
+
+  const img = selectedImage.value
+  originalWidth.value = img.naturalWidth || img.width
+  originalHeight.value = img.naturalHeight || img.height
+  aspectRatio.value = originalWidth.value / originalHeight.value
+
+  imageControls.value = {
+    width: img.width || originalWidth.value,
+    height: img.height || originalHeight.value,
+    maintainAspectRatio: true,
+    cropX: 0,
+    cropY: 0,
+    cropWidth: originalWidth.value,
+    cropHeight: originalHeight.value,
+    brightness: 100,
+    contrast: 100,
+    saturation: 100
+  }
 }
 
-const toggleAspectRatio = () => {
-  if (imageControls.value.maintainAspectRatio) {
-    applyResize()
+const resetImageControls = () => {
+  imageControls.value = {
+    width: 0,
+    height: 0,
+    maintainAspectRatio: true,
+    cropX: 0,
+    cropY: 0,
+    cropWidth: 0,
+    cropHeight: 0,
+    brightness: 100,
+    contrast: 100,
+    saturation: 100
   }
 }
 
 const applyResize = () => {
   if (!selectedImage.value) return
-  
+
   if (imageControls.value.maintainAspectRatio) {
-    const aspectRatio = originalWidth.value / originalHeight.value
-    
     if (imageControls.value.width !== selectedImage.value.width) {
-      imageControls.value.height = Math.round(imageControls.value.width / aspectRatio)
+      imageControls.value.height = Math.round(imageControls.value.width / aspectRatio.value)
     } else if (imageControls.value.height !== selectedImage.value.height) {
-      imageControls.value.width = Math.round(imageControls.value.height * aspectRatio)
+      imageControls.value.width = Math.round(imageControls.value.height * aspectRatio.value)
     }
   }
-  
+
   selectedImage.value.width = imageControls.value.width
   selectedImage.value.height = imageControls.value.height
 }
 
+const toggleAspectRatio = () => {
+  if (imageControls.value.maintainAspectRatio) {
+    aspectRatio.value = imageControls.value.width / imageControls.value.height
+  }
+}
+
 const applyPresetSize = (size) => {
-  if (!selectedImage.value) return
-  
-  const aspectRatio = originalWidth.value / originalHeight.value
-  imageControls.value.width = size.width
-  imageControls.value.height = size.height || Math.round(size.width / aspectRatio)
-  
+  if (size.name === 'Original') {
+    imageControls.value.width = originalWidth.value
+    imageControls.value.height = originalHeight.value
+  } else {
+    imageControls.value.width = size.width
+    imageControls.value.height = size.height
+  }
   applyResize()
 }
 
 const applyCropPreview = () => {
-  if (!previewCanvas.value || !selectedImage.value) return
-  
-  const canvas = previewCanvas.value
-  const ctx = canvas.getContext('2d')
-  
-  canvas.width = imageControls.value.cropWidth
-  canvas.height = imageControls.value.cropHeight
-  
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.strokeStyle = '#3b82f6'
-  ctx.lineWidth = 2
-  ctx.strokeRect(0, 0, canvas.width, canvas.height)
+  // Preview logic would be implemented here
 }
 
-const applyCrop = () => {
-  if (!selectedImage.value) return
-  
-  const canvas = document.createElement('canvas')
+const applyCrop = async () => {
+  if (!selectedImage.value || !previewCanvas.value) return
+
+  const canvas = previewCanvas.value
   const ctx = canvas.getContext('2d')
   
   canvas.width = imageControls.value.cropWidth
@@ -1189,91 +907,6 @@ onMounted(() => {
     if (extractedImages.length > 0) {
       emit('inline-images-changed', extractedImages)
     }
-    
-    // NEW: Use beforeinput event which fires BEFORE paste
-    const handleBeforeInput = (event) => {
-      console.log('⚡ BEFOREINPUT EVENT:', event.inputType, event)
-      
-      if (event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop') {
-        const dataTransfer = event.dataTransfer
-        if (dataTransfer && dataTransfer.items) {
-          for (let i = 0; i < dataTransfer.items.length; i++) {
-            const item = dataTransfer.items[i]
-            console.log(`beforeinput item ${i}:`, item.type, item.kind)
-            if (item.type.indexOf('image') !== -1) {
-              console.log('🚫 PREVENTING DEFAULT in beforeinput for image')
-              event.preventDefault()
-              
-              if (!props.allowImages) {
-                alert('Images are not allowed in this field')
-                return
-              }
-              
-              // Handle the image
-              const file = item.getAsFile()
-              if (file) {
-                console.log('✅ Got file from beforeinput, converting to base64...')
-                const reader = new FileReader()
-                reader.onload = (e) => {
-                  const base64Data = e.target.result
-                  console.log('✅ Base64 ready, inserting...')
-                  
-                  const timestamp = Date.now()
-                  const extension = file.type.split('/')[1] || 'png'
-                  const filename = `pasted-image-${timestamp}.${extension}`
-                  
-                  const img = document.createElement('img')
-                  img.src = base64Data
-                  img.alt = filename.replace(/\.[^/.]+$/, '')
-                  img.className = 'max-w-full h-auto my-2'
-                  
-                  const selection = window.getSelection()
-                  if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0)
-                    range.deleteContents()
-                    range.insertNode(img)
-                    range.setStartAfter(img)
-                    range.collapse(true)
-                    selection.removeAllRanges()
-                    selection.addRange(range)
-                  } else {
-                    editorRef.value.appendChild(img)
-                  }
-                  
-                  nextTick(() => {
-                    handleInput()
-                  })
-                }
-                reader.readAsDataURL(file)
-              }
-              return
-            }
-          }
-        }
-      }
-    }
-    
-    // CRITICAL: Attach beforeinput FIRST (highest priority)
-    console.log('🔧 Attaching beforeinput event listener...')
-    editorRef.value.addEventListener('beforeinput', handleBeforeInput, { capture: true })
-    
-    // CRITICAL: Directly attach paste and drop handlers with capture phase
-    console.log('🔧 Attaching paste and drop event listeners directly...')
-    editorRef.value.addEventListener('paste', handlePaste, { capture: true })
-    editorRef.value.addEventListener('drop', handleDrop, { capture: true })
-    editorRef.value.addEventListener('dragover', handleDragOver, false)
-    console.log('✅ Event listeners attached successfully')
-    console.log('📋 Paste handler:', handlePaste)
-    console.log('📦 Drop handler:', handleDrop)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (editorRef.value) {
-    console.log('🧹 Cleaning up event listeners...')
-    editorRef.value.removeEventListener('paste', handlePaste, { capture: true })
-    editorRef.value.removeEventListener('drop', handleDrop, { capture: true })
-    editorRef.value.removeEventListener('dragover', handleDragOver, false)
   }
 })
 </script>

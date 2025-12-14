@@ -23,6 +23,13 @@
               </svg>
               {{ currentPublication.name }}
             </span>
+            <!-- NEW: Inline images indicator -->
+            <span v-if="inlineImagesCount > 0" class="inline-images-indicator">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              {{ inlineImagesCount }} inline {{ inlineImagesCount === 1 ? 'image' : 'images' }}
+            </span>
             <span class="auto-save-status" :class="{ 'text-green-600': lastSaved, 'text-gray-500': !lastSaved }">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -79,11 +86,13 @@
             <div class="content-section">
               <label class="section-label">Article Content *</label>
               <WysiwygEditor
+                ref="contentEditor"
                 v-model="formData.content"
                 :placeholder="'Write your article content here...'"
                 :with-emoji="true"
                 size="large"
                 allow-images
+                @inline-images-changed="handleInlineImagesChanged"
               />
             </div>
           </div>
@@ -149,7 +158,6 @@
           <!-- Authors -->
           <div class="sidebar-section">
             <h3 class="sidebar-title">Authors</h3>
-            <!-- Info about current user as first author -->
             <div v-if="mode === 'create' && currentUserAsAuthor" class="author-info-banner">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -272,6 +280,13 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'save-draft', 'publish', 'preview', 'cancel'])
 
+// NEW: Ref to content editor
+const contentEditor = ref(null)
+
+// NEW: Inline images state
+const inlineImages = ref([])
+const inlineImagesCount = computed(() => inlineImages.value.length)
+
 // Auto-save state
 const lastSaved = ref(null)
 const autoSaveInterval = ref(null)
@@ -288,7 +303,7 @@ const confirmButtonText = ref('Confirm')
 // Validation state
 const validationErrors = ref([])
 
-// Form data with all required fields - FIX 1: Added publicationId
+// Form data with all required fields
 const formData = ref({
   title: '',
   authors: [],
@@ -306,15 +321,21 @@ const formData = ref({
   featuredImage: null,
   album: [],
   secondaryCategory: null,
-  publicationId: null  // FIX 1: Added publicationId field
+  publicationId: null
 })
+
+// NEW: Handle inline images changed from WysiwygEditor
+const handleInlineImagesChanged = (images) => {
+  console.log('📷 Inline images changed:', images.length)
+  inlineImages.value = images
+}
 
 // Check if publication is selected
 const hasPublication = computed(() => {
   return !!currentPublication.value
 })
 
-// Get current user as author object - FIX 2: Added 'name' field
+// Get current user as author object
 const currentUserAsAuthor = computed(() => {
   if (!authStore.user) return null
   
@@ -322,7 +343,7 @@ const currentUserAsAuthor = computed(() => {
   
   return {
     id: authStore.user.id,
-    name: displayName,              // FIX 2: Added for AuthorSelect display
+    name: displayName,
     username: authStore.user.username || authStore.user.name,
     displayName: displayName,
     firstName: authStore.user.firstName || authStore.user.name?.split(' ')[0] || '',
@@ -334,13 +355,12 @@ const currentUserAsAuthor = computed(() => {
 // Initialize authors with current user
 const initializeAuthors = () => {
   if (props.mode === 'create' && currentUserAsAuthor.value) {
-    // For new articles, set current user as first author
     formData.value.authors = [currentUserAsAuthor.value]
     console.log('✅ Initialized with current user as author:', currentUserAsAuthor.value.displayName)
   }
 }
 
-// FIX 1: Initialize publication
+// Initialize publication
 const initializePublication = () => {
   if (currentPublication.value) {
     formData.value.publicationId = currentPublication.value.id
@@ -389,23 +409,21 @@ watchEffect(() => {
       featuredImage: props.article.featuredImage || null,
       album: props.article.album || [],
       secondaryCategory: props.article.secondaryCategory || null,
-      publicationId: props.article.publicationId || currentPublication.value?.id  // FIX 1: Added publicationId
+      publicationId: props.article.publicationId || currentPublication.value?.id
     }
   }
 })
 
 // Check for existing draft on component mount
 onMounted(() => {
-  // Initialize authors and publication for new articles
   if (props.mode === 'create') {
     initializeAuthors()
-    initializePublication()  // FIX 1: Added publication initialization
+    initializePublication()
   }
   
   loadDraft()
   startAutoSave()
   
-  // Set up beforeunload to warn about unsaved changes
   window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
@@ -422,7 +440,7 @@ watch(formData, (newValue, oldValue) => {
   }
 }, { deep: true, immediate: false })
 
-// FIX 1: Watch for publication changes
+// Watch for publication changes
 watch(() => currentPublication.value, (newPublication) => {
   if (newPublication) {
     formData.value.publicationId = newPublication.id
@@ -439,13 +457,11 @@ const loadDraft = () => {
     if (draft) {
       const parsedDraft = JSON.parse(draft)
       
-      // Only load draft for new articles or if no article data is provided
       if (props.mode === 'create' || !props.article) {
         formData.value = { ...formData.value, ...parsedDraft.data }
         lastSaved.value = parsedDraft.timestamp
         hasDraft.value = true
         
-        // Ensure current user is still in authors list
         if (props.mode === 'create' && currentUserAsAuthor.value) {
           const hasCurrentUser = formData.value.authors.some(a => a.id === currentUserAsAuthor.value.id)
           if (!hasCurrentUser) {
@@ -453,7 +469,6 @@ const loadDraft = () => {
           }
         }
         
-        // FIX 1: Ensure publication is set
         if (props.mode === 'create' && !formData.value.publicationId && currentPublication.value) {
           formData.value.publicationId = currentPublication.value.id
         }
@@ -583,22 +598,18 @@ const cancelAction = () => {
 const validateForm = () => {
   const errors = []
   
-  // Check if publication is selected
   if (!hasPublication.value) {
     errors.push('Publication must be selected before saving')
   }
   
-  // Check if title is provided
   if (!formData.value.title || formData.value.title.trim() === '') {
     errors.push('Article title is required')
   }
   
-  // Check if content is provided
   if (!formData.value.content || formData.value.content.trim() === '') {
     errors.push('Article content is required')
   }
   
-  // Check if at least one author
   if (!formData.value.authors || formData.value.authors.length === 0) {
     errors.push('At least one author is required')
   }
@@ -609,7 +620,6 @@ const validateForm = () => {
 
 // Handle save actions with confirmation
 const handleSave = () => {
-  // Validate before showing confirmation
   if (!validateForm()) {
     showConfirmationDialog(
       'Cannot Save Article',
@@ -633,7 +643,6 @@ const handleSave = () => {
 }
 
 const handleSaveDraft = () => {
-  // Validate before saving draft
   if (!validateForm()) {
     showConfirmationDialog(
       'Cannot Save Draft',
@@ -653,7 +662,6 @@ const handleSaveDraft = () => {
 }
 
 const handlePublish = () => {
-  // Validate before publishing
   if (!validateForm()) {
     showConfirmationDialog(
       'Cannot Publish Article',
@@ -699,9 +707,21 @@ const handleClearDraft = () => {
   )
 }
 
-// Perform actual actions - FIX 3: Ensure status stays as draft
+// NEW: Prepare article data with inline images
+const prepareArticleDataWithInlineImages = () => {
+  // Get inline images from the content editor
+  const currentInlineImages = contentEditor.value?.getInlineImages() || []
+  
+  console.log('📦 Preparing article data with inline images:', currentInlineImages.length)
+  
+  return {
+    ...formData.value,
+    inlineImages: currentInlineImages // Add inline images to the data
+  }
+}
+
+// Perform actual actions
 const performSave = () => {
-  // FIX 3: Ensure status stays as intended (don't auto-publish)
   if (!formData.value.status || formData.value.status === '') {
     formData.value.status = 'draft'
   }
@@ -709,23 +729,28 @@ const performSave = () => {
   console.log('💾 Saving article with status:', formData.value.status)
   console.log('📰 Publication ID:', formData.value.publicationId)
   console.log('👥 Authors:', formData.value.authors)
+  console.log('📷 Inline images:', inlineImages.value.length)
+  
+  const articleData = prepareArticleDataWithInlineImages()
   
   autoSave()
-  emit('save', formData.value)
+  emit('save', articleData)
   clearDraft()
 }
 
 const performSaveDraft = () => {
-  // FIX 3: Explicitly set to draft and clear published fields
   formData.value.status = 'draft'
   formData.value.live = false
   formData.value.publishedAt = null
   
   console.log('💾 Saving draft')
   console.log('📰 Publication ID:', formData.value.publicationId)
+  console.log('📷 Inline images:', inlineImages.value.length)
+  
+  const articleData = prepareArticleDataWithInlineImages()
   
   autoSave()
-  emit('save-draft', formData.value)
+  emit('save-draft', articleData)
 }
 
 const performPublish = () => {
@@ -737,9 +762,12 @@ const performPublish = () => {
   
   console.log('📢 Publishing article')
   console.log('📰 Publication ID:', formData.value.publicationId)
+  console.log('📷 Inline images:', inlineImages.value.length)
+  
+  const articleData = prepareArticleDataWithInlineImages()
   
   autoSave()
-  emit('publish', formData.value)
+  emit('publish', articleData)
   clearDraft()
 }
 
@@ -838,6 +866,18 @@ watch(() => formData.value.status, (newStatus) => {
   padding: 0.375rem 0.75rem;
   border-radius: 0.375rem;
   border: 1px solid #fecaca;
+}
+
+.inline-images-indicator {
+  display: flex;
+  align-items: center;
+  color: #8b5cf6;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f3e8ff;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d8b4fe;
 }
 
 .publication-indicator {
