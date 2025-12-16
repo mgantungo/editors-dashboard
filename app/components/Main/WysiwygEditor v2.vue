@@ -508,6 +508,20 @@ const extractInlineImages = (content) => {
     }
   })
   
+  // CRITICAL FIX: Update the actual editor content with the data-inline-id attributes
+  // Instead of replacing innerHTML (which breaks cursor), update img elements directly
+  if (images.length > 0 && editorRef.value) {
+    const editorImages = editorRef.value.querySelectorAll('img[src^="data:image/"]')
+    
+    editorImages.forEach((editorImg, index) => {
+      if (images[index]) {
+        // Add the tracking ID to the actual editor img element
+        editorImg.setAttribute('data-inline-id', images[index].id)
+      }
+    })
+  }
+  
+  console.log('Inline images extracted:', images.length)
   return images
 }
 
