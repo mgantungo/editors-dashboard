@@ -661,6 +661,7 @@ const handleSaveDraft = () => {
   )
 }
 
+
 const handlePublish = () => {
   if (!validateForm()) {
     showConfirmationDialog(
@@ -678,7 +679,8 @@ const handlePublish = () => {
     'Publish',
     'publish'
   )
-}
+}  
+
 
 const handlePreview = () => {
   emit('preview', formData.value)
@@ -722,53 +724,58 @@ const prepareArticleDataWithInlineImages = () => {
 
 // Perform actual actions
 const performSave = () => {
-  if (!formData.value.status || formData.value.status === '') {
-    formData.value.status = 'draft'
+    if (!formData.value.status || formData.value.status === '') {
+      formData.value.status = 'draft'
+    }
+    
+    console.log('💾 Saving article with status:', formData.value.status)
+    console.log('📰 Publication ID:', formData.value.publicationId)
+    console.log('👥 Authors:', formData.value.authors)
+    console.log('📷 Inline images:', inlineImages.value.length)
+    
+    const articleData = prepareArticleDataWithInlineImages()
+    
+    autoSave()
+    emit('save', articleData)
+    clearDraft()
   }
-  
-  console.log('💾 Saving article with status:', formData.value.status)
-  console.log('📰 Publication ID:', formData.value.publicationId)
-  console.log('👥 Authors:', formData.value.authors)
-  console.log('📷 Inline images:', inlineImages.value.length)
-  
-  const articleData = prepareArticleDataWithInlineImages()
-  
-  autoSave()
-  emit('save', articleData)
-  clearDraft()
-}
 
 const performSaveDraft = () => {
-  formData.value.status = 'draft'
-  formData.value.live = false
-  formData.value.publishedAt = null
+  // Ensure status is 'draft' and not 'published'
+  formData.value.status = 'draft';
+  formData.value.live = false;
+  formData.value.publishedAt = null;
   
-  console.log('💾 Saving draft')
-  console.log('📰 Publication ID:', formData.value.publicationId)
-  console.log('📷 Inline images:', inlineImages.value.length)
+  console.log('💾 Saving draft (not publishing)');
+  console.log('📰 Publication ID:', formData.value.publicationId);
+  console.log('📷 Inline images:', inlineImages.value.length);
   
-  const articleData = prepareArticleDataWithInlineImages()
+  const articleData = prepareArticleDataWithInlineImages();
   
-  autoSave()
-  emit('save-draft', articleData)
+  autoSave();
+  emit('save-draft', articleData);
 }
 
+
 const performPublish = () => {
-  formData.value.status = 'published'
+  // Ensure status is 'published'
+  formData.value.status = 'published';
+  formData.value.live = true;
+  
+  // Set publishedAt only if not already set
   if (!formData.value.publishedAt) {
-    formData.value.publishedAt = new Date().toISOString()
+    formData.value.publishedAt = new Date().toISOString();
   }
-  formData.value.live = true
   
-  console.log('📢 Publishing article')
-  console.log('📰 Publication ID:', formData.value.publicationId)
-  console.log('📷 Inline images:', inlineImages.value.length)
+  console.log('📢 Publishing article');
+  console.log('📰 Publication ID:', formData.value.publicationId);
+  console.log('📷 Inline images:', inlineImages.value.length);
   
-  const articleData = prepareArticleDataWithInlineImages()
+  const articleData = prepareArticleDataWithInlineImages();
   
-  autoSave()
-  emit('publish', articleData)
-  clearDraft()
+  autoSave();
+  emit('publish', articleData);
+  clearDraft();
 }
 
 const performClearDraft = () => {

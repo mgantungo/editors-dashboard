@@ -8,7 +8,7 @@
           <p class="text-sm text-gray-500 mt-1">Select multiple images for your album</p>
         </div>
         <button @click="handleClose" class="close-btn text-2xl hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center">
-          ×
+          Ã—
         </button>
       </div>
 
@@ -80,7 +80,7 @@
                   class="w-full h-full object-cover"
                   @error="handleImageError"
                 />
-                <div v-else class="video-placeholder text-2xl">🎥</div>
+                <div v-else class="video-placeholder text-2xl">ðŸŽ¥</div>
               </div>
               <div class="media-info p-3">
                 <div class="media-name text-sm font-medium text-gray-800 truncate mb-1">{{ item.name }}</div>
@@ -104,7 +104,7 @@
             @dragleave="isDragOver = false"
           >
             <div class="upload-content flex flex-col items-center gap-4">
-              <div class="upload-icon text-4xl">📁</div>
+              <div class="upload-icon text-4xl">ðŸ“</div>
               <p class="text-gray-700 font-medium">Drag and drop multiple files here</p>
               <p class="upload-hint text-gray-500 m-0">or</p>
               <input
@@ -379,37 +379,54 @@ const handleFiles = (files) => {
 }
 
 const simulateUpload = (fileItem) => {
-  const interval = setInterval(() => {
-    fileItem.progress += 10
-    if (fileItem.progress >= 100) {
-      clearInterval(interval)
+  // Convert file to base64 immediately to avoid blob URLs
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const base64Data = e.target.result
+    
+    // Simulate progress animation
+    let progress = 0
+    const interval = setInterval(() => {
+      progress += 10
+      fileItem.progress = progress
       
-      // Add to media library
-      const newMedia = {
-        id: Date.now() + Math.random(),
-        name: fileItem.name,
-        url: URL.createObjectURL(fileItem.file),
-        type: fileItem.type,
-        size: fileItem.size,
-        alt: fileItem.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-        uploadedAt: new Date().toISOString()
-      }
-      
-      mediaLibrary.value.unshift(newMedia)
-      completedUploads.value++
-      
-      // Auto-select the newly uploaded media
-      selectedMedia.value.push(newMedia)
-      
-      // Remove from queue after delay
-      setTimeout(() => {
-        uploadQueue.value = uploadQueue.value.filter(item => item.id !== fileItem.id)
-        if (uploadQueue.value.length === 0) {
-          completedUploads.value = 0
+      if (progress >= 100) {
+        clearInterval(interval)
+        
+        // Add to media library with BASE64 URL instead of blob URL
+        const newMedia = {
+          id: Date.now() + Math.random(),
+          name: fileItem.name,
+          url: base64Data,  // BASE64 - will be extracted and uploaded by ArticleEditor
+          type: fileItem.type,
+          size: fileItem.size,
+          alt: fileItem.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+          uploadedAt: new Date().toISOString(),
+          file: fileItem.file  // Keep the file for potential future use
         }
-      }, 1000)
-    }
-  }, 200)
+        
+        mediaLibrary.value.unshift(newMedia)
+        completedUploads.value++
+        
+        // Auto-select the newly uploaded media
+        selectedMedia.value.push(newMedia)
+        
+        // Remove from queue after delay
+        setTimeout(() => {
+          uploadQueue.value = uploadQueue.value.filter(item => item.id !== fileItem.id)
+          if (uploadQueue.value.length === 0) {
+            completedUploads.value = 0
+          }
+        }, 1000)
+      }
+    }, 200)
+  }
+  
+  reader.onerror = (error) => {
+    console.error('Error converting file to base64:', error)
+  }
+  
+  reader.readAsDataURL(fileItem.file)
 }
 
 const formatFileSize = (bytes) => {
