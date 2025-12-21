@@ -792,7 +792,6 @@ watch(() => formData.value.status, (newStatus) => {
 </script>
 
 <style scoped>
-/* ... (Keep all existing styles from previous version) ... */
 .editor-overlay {
   position: fixed;
   inset: 0;
@@ -930,14 +929,16 @@ watch(() => formData.value.status, (newStatus) => {
 .close-btn {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   color: #64748b;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 2rem;
+  height: 2rem;
 }
 
 .close-btn:hover {
@@ -989,7 +990,7 @@ watch(() => formData.value.status, (newStatus) => {
 
 .title-input {
   width: 100%;
-  padding: 0.8rem;
+  padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1.5rem;
@@ -1042,7 +1043,7 @@ watch(() => formData.value.status, (newStatus) => {
 
 .form-input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   font-size: 0.875rem;
@@ -1197,11 +1198,16 @@ watch(() => formData.value.status, (newStatus) => {
   background: #3b82f6;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
   transition: background-color 0.2s;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:hover {
@@ -1212,16 +1218,38 @@ watch(() => formData.value.status, (newStatus) => {
   background: white;
   color: #374151;
   border: 1px solid #d1d5db;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
   transition: all 0.2s;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-secondary:hover {
   background: #f9fafb;
   border-color: #9ca3af;
+}
+
+/* Reduce SaveControls button sizes */
+.save-controls-section :deep(.btn-primary),
+.save-controls-section :deep(.btn-secondary) {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
+}
+
+/* Reduce dialog button sizes */
+.confirmation-dialog .btn-primary,
+.confirmation-dialog .btn-secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  height: 2.25rem;
 }
 
 @media (max-width: 1024px) {
@@ -1262,6 +1290,20 @@ watch(() => formData.value.status, (newStatus) => {
   .title-input {
     font-size: 1.25rem;
     padding: 0.75rem;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    height: 2rem;
+  }
+  
+  .save-controls-section :deep(.btn-primary),
+  .save-controls-section :deep(.btn-secondary) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    height: 2rem;
   }
 }
 </style>

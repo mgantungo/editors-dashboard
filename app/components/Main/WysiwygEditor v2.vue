@@ -442,88 +442,82 @@ const canvasStyle = computed(() => {
 
 // NEW: Extract inline images from content
 const extractInlineImages = (content) => {
-  const images = []
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = content
-  
-  const imgElements = tempDiv.querySelectorAll('img')
-  
-  imgElements.forEach((img, index) => {
-    const src = img.getAttribute('src')
-    
-    // Check if it's a base64 data URL (needs to be uploaded)
-    if (src && src.startsWith('data:image/')) {
-      const dataUrlMatch = src.match(/^data:image\/(png|jpeg|jpg|gif|webp|bmp|svg\+xml);base64,(.+)$/)
+      const images = []
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = content
       
-      if (dataUrlMatch) {
-        const [, format, base64Data] = dataUrlMatch
+      const imgElements = tempDiv.querySelectorAll('img')
+      
+      imgElements.forEach((img, index) => {
+        const src = img.getAttribute('src')
         
-        // Extract alt text for filename
-        const alt = img.getAttribute('alt') || img.getAttribute('title') || `inline-image-${index + 1}`
-        
-        // Generate a unique ID for this image
-        const imageId = `inline-${Date.now()}-${index}`
-        
-        // Convert base64 to blob
-        const byteCharacters = atob(base64Data)
-        const byteArrays = []
-        
-        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-          const slice = byteCharacters.slice(offset, offset + 512)
-          const byteNumbers = new Array(slice.length)
+        // Check if it's a base64 data URL (needs to be uploaded)
+        if (src && src.startsWith('data:image/')) {
+          const dataUrlMatch = src.match(/^data:image\/(png|jpeg|jpg|gif|webp|bmp|svg\+xml);base64,(.+)$/)
           
-          for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i)
+          if (dataUrlMatch) {
+            const [, format, base64Data] = dataUrlMatch
+            
+            // Use existing data-inline-id if it exists
+            let imageId = img.getAttribute('data-inline-id')
+            
+            // If no data-inline-id exists, generate one
+            if (!imageId) {
+              const timestamp = Date.now()
+              imageId = `inline-${timestamp}-${index}`
+              
+              // Add the data-inline-id to the img element in the actual editor
+              if (editorRef.value) {
+                const editorImgs = editorRef.value.querySelectorAll('img[src^="data:image/"]')
+                if (editorImgs[index]) {
+                  editorImgs[index].setAttribute('data-inline-id', imageId)
+                }
+              }
+            }
+            
+            // Extract alt text for filename
+            const alt = img.getAttribute('alt') || img.getAttribute('title') || `inline-image-${index + 1}`
+            
+            // Convert base64 to blob
+            const byteCharacters = atob(base64Data)
+            const byteArrays = []
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+              const slice = byteCharacters.slice(offset, offset + 512)
+              const byteNumbers = new Array(slice.length)
+              
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i)
+              }
+              
+              const byteArray = new Uint8Array(byteNumbers)
+              byteArrays.push(byteArray)
+            }
+            
+            const blob = new Blob(byteArrays, { type: `image/${format}` })
+            
+            // Create a File object with sanitized filename
+            const extension = format === 'svg+xml' ? 'svg' : format
+            const sanitizedName = sanitizeFilename(alt)
+            const filename = `${sanitizedName}-${Date.now()}.${extension}`
+            const file = new File([blob], filename, { type: `image/${format}` })
+            
+            images.push({
+              id: imageId,  // Use the existing or generated ID
+              file: file,
+              dataUrl: src,
+              alt: alt,
+              format: format,
+              originalElement: img.outerHTML
+            })
           }
-          
-          const byteArray = new Uint8Array(byteNumbers)
-          byteArrays.push(byteArray)
         }
-        
-        const blob = new Blob(byteArrays, { type: `image/${format}` })
-        
-        // Create a File object with sanitized filename
-        const extension = format === 'svg+xml' ? 'svg' : format
-        const sanitizedName = sanitizeFilename(alt)
-        const timestamp = Date.now()
-        const filename = `${sanitizedName}-${timestamp}.${extension}`
-        const file = new File([blob], filename, { type: `image/${format}` })
-        
-        images.push({
-          id: imageId,
-          file: file,
-          dataUrl: src,
-          alt: alt,
-          format: format,
-          originalElement: img.outerHTML
-        })
-        
-        // Add a data attribute to track this image
-        img.setAttribute('data-inline-id', imageId)
-      }
+      })
+      
+      console.log('Inline images extracted:', images.length)
+      console.log('Image IDs:', images.map(img => img.id))
+      return images
     }
-    // Also check for blob URLs (shouldn't happen with our new paste handler, but just in case)
-    else if (src && src.startsWith('blob:')) {
-      console.warn('Blob URL detected in content - this should be converted to base64:', src)
-    }
-  })
-  
-  // CRITICAL FIX: Update the actual editor content with the data-inline-id attributes
-  // Instead of replacing innerHTML (which breaks cursor), update img elements directly
-  if (images.length > 0 && editorRef.value) {
-    const editorImages = editorRef.value.querySelectorAll('img[src^="data:image/"]')
-    
-    editorImages.forEach((editorImg, index) => {
-      if (images[index]) {
-        // Add the tracking ID to the actual editor img element
-        editorImg.setAttribute('data-inline-id', images[index].id)
-      }
-    })
-  }
-  
-  console.log('Inline images extracted:', images.length)
-  return images
-}
 
 // NEW: Sanitize filename to be server-friendly
 const sanitizeFilename = (filename) => {
