@@ -1,36 +1,43 @@
 <!--components/Main/MediaSelector.vue-->
 <template>
   <div class="media-selector-overlay" @click.self="handleClose">
-    <div class="media-selector bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[85vh] flex flex-col overflow-hidden">
+    <div class="media-selector bg-white w-full max-h-[75vh] flex flex-col overflow-hidden rounded-t-xl shadow-xl">
       <!-- Header - Compact -->
-      <div class="media-header flex justify-between items-center px-5 py-3 border-b border-gray-100">
+      <div class="media-header flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-20">
         <div class="flex items-center gap-3">
-          <div class="header-icon w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center">
+          <div class="header-icon w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
             <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <div>
             <h2 class="text-lg font-semibold text-gray-800">Media Library</h2>
-            <p class="text-xs text-gray-500">Select multiple images</p>
+            <p class="text-xs text-gray-500">Select multiple images for your album</p>
           </div>
         </div>
-        <button 
-          @click="handleClose" 
-          class="close-btn p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-          aria-label="Close"
-        >
-          <svg class="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <button 
+            @click="handleClose" 
+            class="close-btn p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            aria-label="Close"
+          >
+            <svg class="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drag handle -->
+      <div class="drag-handle w-full py-2 flex justify-center">
+        <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
       </div>
 
       <!-- Tabs - Compact -->
-      <div class="media-tabs flex border-b border-gray-100 bg-gray-50">
+      <div class="media-tabs flex border-b border-gray-100 bg-gray-50 sticky top-16 z-10">
         <button 
           :class="['tab-button flex items-center gap-2 px-4 py-3 relative transition-colors duration-200 font-medium text-sm flex-1 justify-center',
-                   { 'text-blue-600': activeTab === 'library', 
+                   { 'text-blue-600 bg-white border-t border-l border-r border-gray-200 rounded-t-lg -mb-px': activeTab === 'library', 
                      'text-gray-600 hover:text-gray-800': activeTab !== 'library' }]"
           @click="activeTab = 'library'"
         >
@@ -38,11 +45,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Library
-          <div v-if="activeTab === 'library'" class="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full"></div>
         </button>
         <button 
           :class="['tab-button flex items-center gap-2 px-4 py-3 relative transition-colors duration-200 font-medium text-sm flex-1 justify-center',
-                   { 'text-blue-600': activeTab === 'upload', 
+                   { 'text-blue-600 bg-white border-t border-l border-r border-gray-200 rounded-t-lg -mb-px': activeTab === 'upload', 
                      'text-gray-600 hover:text-gray-800': activeTab !== 'upload' }]"
           @click="activeTab = 'upload'"
         >
@@ -50,7 +56,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           Upload
-          <div v-if="activeTab === 'upload'" class="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full"></div>
         </button>
       </div>
 
@@ -317,8 +322,8 @@
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="media-footer border-t border-gray-200 px-5 py-4">
+      <!-- Footer - Sticky at bottom -->
+      <div class="media-footer border-t border-gray-200 px-5 py-4 bg-white sticky bottom-0">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
           <!-- Selected Preview -->
           <div v-if="selectedMedia.length > 0" class="selected-media-info flex items-center gap-3 flex-1">
@@ -342,26 +347,28 @@
               </div>
             </div>
           </div>
-          <div v-else class="flex-1"></div>
+          <div v-else class="flex-1">
+            <p class="text-sm text-gray-500">Select images to add to your album</p>
+          </div>
           
           <!-- Actions -->
           <div class="media-actions flex gap-2">
             <button 
               @click="clearSelection" 
-              class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="selectedMedia.length === 0"
             >
               Clear
             </button>
             <button 
               @click="handleClose" 
-              class="px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              class="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
               Cancel
             </button>
             <button 
               @click="insertSelectedMedia" 
-              class="px-5 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-6 py-2.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="selectedMedia.length === 0"
             >
               Add {{ selectedMedia.length }}
@@ -909,7 +916,7 @@ const formatFileSize = (bytes) => {
 }
 
 const handleImageError = (event) => {
-  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNmY3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzkwOWQ5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4='
+  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNmY3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzkwOTQ5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4='
 }
 </script>
 
@@ -922,24 +929,75 @@ const handleImageError = (event) => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
   animation: fadeIn 0.15s ease-out;
 }
 
 .media-selector {
-  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 75vh;
+  border-radius: 12px 12px 0 0;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
 }
 
-.tab-button {
-  position: relative;
-  transition: color 0.2s ease;
+.drag-handle {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: grab;
 }
 
-.tab-button:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.media-header {
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.media-tabs {
+  position: sticky;
+  top: 73px; /* Header height */
+  z-index: 20;
+}
+
+.media-content {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.media-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.media-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.media-content::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 3px;
+}
+
+.media-content::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.media-footer {
+  background: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  box-shadow: 0 -1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 @keyframes fadeIn {
@@ -950,7 +1008,7 @@ const handleImageError = (event) => {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(100%);
   }
   to {
     opacity: 1;
@@ -961,7 +1019,8 @@ const handleImageError = (event) => {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .media-selector {
-    max-height: calc(100vh - 2rem);
+    height: 75vh;
+    width: 100%;
   }
   
   .media-grid {
@@ -1004,6 +1063,16 @@ const handleImageError = (event) => {
   
   .upload-zone {
     padding: 1.5rem;
+  }
+  
+  .media-tabs {
+    top: 65px; /* Adjusted for smaller header */
+  }
+}
+
+@media (max-height: 600px) {
+  .media-selector {
+    height: 85vh;
   }
 }
 </style>

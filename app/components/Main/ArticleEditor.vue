@@ -834,7 +834,7 @@ watch(() => formData.value.status, (newStatus) => {
 
 .header-title {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #111827;
   margin: 0;
   display: flex;
@@ -989,7 +989,7 @@ watch(() => formData.value.status, (newStatus) => {
 
 .title-input {
   width: 100%;
-  padding: 1rem;
+  padding: 0.8rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1.5rem;
